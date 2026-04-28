@@ -6,18 +6,18 @@ import google.generativeai as genai
 
 app = Flask(__name__, template_folder='../templates')
 
-# Google API Key setup
+# Google API Configuration
+# Dashboard se GOOGLE_API_KEY set hona lazmi hai
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
-# Stable model call - Changed to latest to avoid 404
+# Stable Gemini 1.5 Flash Model
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 def detect_wp(url):
     try:
-        if not url.startswith('http'): 
-            url = 'https://' + url
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        if not url.startswith('http'): url = 'https://' + url
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         response = requests.get(url, headers=headers, timeout=10)
         
         theme = "Not Detected"
@@ -46,17 +46,13 @@ def process():
         return jsonify(detect_wp(user_text))
 
     try:
-        # Task mapping for AI
-        prompt = f"System: Expert Developer. Mode: {mode}. Platform: {editor}. User Input: {user_text}"
+        prompt = f"Expert Developer. Task: {mode}. Platform: {editor}. Input: {user_text}"
         response = model.generate_content(prompt)
         
         if response and hasattr(response, 'text'):
             return jsonify({"status": "success", "result": response.text})
         else:
-            return jsonify({"status": "error", "result": "AI Empty Response"})
+            return jsonify({"status": "error", "result": "AI Empty Response / Safety Filter."})
             
     except Exception as e:
         return jsonify({"status": "error", "result": f"AI Engine Error: {str(e)}"})
-
-# Vercel requires the app object
-app_handler = app
