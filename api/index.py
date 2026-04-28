@@ -6,15 +6,17 @@ import google.generativeai as genai
 
 app = Flask(__name__, template_folder='../templates')
 
-# Environment Variable se Key uthana
+# Vercel Settings se API Key lena
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
+
+# Latest Stable Model Name
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 def detect_wp(url):
     try:
         if not url.startswith('http'): url = 'https://' + url
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         response = requests.get(url, headers=headers, timeout=10)
         theme = "Not Detected"
         theme_match = re.search(r'wp-content/themes/([^/]+)/', response.text)
@@ -35,18 +37,14 @@ def process():
     user_text = request.form.get('text')
     editor = request.form.get('editor')
     
-    # Agar user ne WordPress detect manga hai
     if mode == 'wp_detect':
         return jsonify(detect_wp(user_text))
 
     try:
-        # AI Task Logic
-        prompt = f"Act as an expert developer. Environment: {editor}. Task: {mode}. Input: {user_text}"
+        prompt = f"Expert Developer Mode. Task: {mode}. Platform: {editor}. Input: {user_text}"
         response = model.generate_content(prompt)
         return jsonify({"status": "success", "result": response.text})
     except Exception as e:
-        return jsonify({"status": "error", "result": str(e)})
+        return jsonify({"status": "error", "result": f"AI Error: {str(e)}"})
 
-@app.route('/privacy')
-def privacy():
-    return render_template('privacy.html')
+# Vercel handles the app object
