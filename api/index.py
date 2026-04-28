@@ -6,11 +6,12 @@ import google.generativeai as genai
 
 app = Flask(__name__, template_folder='../templates')
 
-# Google API Key setup 
+# Google API Configuration
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
-# Stable model call to avoid 404
+# Use the most stable model name
+# 'gemini-1.5-flash' automatically points to the latest supported version
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 def detect_wp(url):
@@ -23,7 +24,7 @@ def detect_wp(url):
         if theme_match: theme = theme_match.group(1).replace('-', ' ').title()
         plugins = set(re.findall(r'wp-content/plugins/([^/]+)/', response.text))
         plugin_list = [p.replace('-', ' ').title() for p in plugins]
-        return {"status": "success", "theme": theme, "plugins": plugin_list}
+        return {"status": "success", "theme": theme, "plugins": list(plugin_list)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -41,8 +42,18 @@ def process():
         return jsonify(detect_wp(user_text))
 
     try:
-        prompt = f"System: Expert Developer. Mode: {mode}. Platform: {editor}. User Input: {user_text}"
+        # Prompt build up
+        prompt = f"Role: Expert Developer. Task: {mode}. Platform: {editor}. Input: {user_text}"
+        
+        # Fixing the generation call
         response = model.generate_content(prompt)
-        return jsonify({"status": "success", "result": response.text})
+        
+        # Verify if response has text property
+        if response and hasattr(response, 'text'):
+            return jsonify({"status": "success", "result": response.text})
+        else:
+            return jsonify({"status": "error", "result": "AI Safety filter blocked the output or empty response."})
+            
     except Exception as e:
-        return jsonify({"status": "error", "result": f"AI Engine Error: {str(e)}"})
+        # Return the actual error for debugging
+        return jsonify({"status": "error", "result": f"System Alert: {str(e)}"})
