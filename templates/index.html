@@ -6,15 +6,16 @@
     <title>CodeMagic AI | Neural Engine</title>
     <style>
         body { background-color: #0d1117; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
-        .container { max-width: 700px; margin: 50px auto; }
-        h1 { color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); font-size: 2.5rem; }
-        .tool-box { background: #161b22; border: 1px solid #30363d; padding: 25px; border-radius: 12px; margin-bottom: 30px; }
-        input, textarea { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #010409; color: white; }
-        button { padding: 12px 25px; background: #10b981; border: none; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { transform: scale(1.05); box-shadow: 0 0 10px #10b981; }
-        .result { margin-top: 15px; color: #10b981; font-family: monospace; white-space: pre-wrap; text-align: left; padding: 10px; background: #010409; border-radius: 5px; display: none; }
+        .container { max-width: 700px; margin: 40px auto; }
+        h1 { color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); font-size: 2.5rem; margin-bottom: 5px; }
+        .status { color: #8b949e; font-size: 0.8rem; margin-bottom: 30px; letter-spacing: 1px; }
+        .tool-box { background: #161b22; border: 1px solid #30363d; padding: 25px; border-radius: 12px; margin-bottom: 25px; text-align: left; }
+        h3 { border-left: 4px solid #10b981; padding-left: 10px; margin-top: 0; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #010409; color: white; box-sizing: border-box; font-size: 1rem; }
+        button { width: 100%; padding: 12px; background: #10b981; border: none; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { background: #12d393; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); transform: translateY(-2px); }
+        .result { margin-top: 15px; padding: 15px; background: #010409; border-radius: 8px; border: 1px dashed #30363d; color: #10b981; display: none; white-space: pre-wrap; font-family: monospace; }
         .plugin-tag { display: inline-block; background: #21262d; border: 1px solid #10b981; padding: 4px 10px; border-radius: 15px; margin: 4px; font-size: 12px; }
-        footer { margin-top: 50px; color: #888; font-size: 0.9rem; border-top: 1px solid #333; padding-top: 20px; }
         .wa-float { position: fixed; bottom: 20px; right: 20px; background: #25d366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
     </style>
 </head>
@@ -22,24 +23,24 @@
 
 <div class="container">
     <h1>CodeMagic AI</h1>
-    <p style="color: #8b949e;">Neural Engine v3.0 Active</p>
+    <div class="status">NEURAL ENGINE ACTIVE • READY</div>
 
     <div class="tool-box">
-        <h3>Clone / Layout / Bug Fix</h3>
-        <textarea id="aiPrompt" rows="4" placeholder="Describe layout, paste code to fix, or enter URL to clone..."></textarea>
-        <button onclick="processAI('general')">Execute Neural Task</button>
+        <h3>AI Developer Suite</h3>
+        <textarea id="aiPrompt" rows="5" placeholder="Enter URL to clone, code to fix, or layout details..."></textarea>
+        <button onclick="runAI()">Execute AI Task</button>
         <div id="aiRes" class="result"></div>
     </div>
 
     <div class="tool-box">
-        <h3>WP Theme & Plugin Detector</h3>
-        <input type="text" id="wpUrl" placeholder="Enter WordPress Site URL">
-        <button onclick="processWP()">Scan Ecosystem</button>
+        <h3>WP Ecosystem Scan</h3>
+        <input type="text" id="wpUrl" placeholder="Enter WordPress Site URL (e.g. example.com)">
+        <button onclick="runWP()">Detect Theme & Plugins</button>
         <div id="wpRes" class="result"></div>
     </div>
 
-    <footer>
-        <p>&copy; 2026 CodeMagic AI | <a href="#" style="color:#10b981; text-decoration:none;">Privacy Policy</a></p>
+    <footer style="margin-top: 40px; color: #8b949e; font-size: 0.8rem;">
+        &copy; 2026 CodeMagic AI | <a href="/privacy" style="color:#10b981; text-decoration:none;">Privacy Policy</a>
     </footer>
 </div>
 
@@ -48,38 +49,48 @@
 </a>
 
 <script>
-    async function processAI(type) {
+    async function runAI() {
         const prompt = document.getElementById('aiPrompt').value;
         const resDiv = document.getElementById('aiRes');
+        if(!prompt) return;
         resDiv.style.display = "block";
-        resDiv.innerText = "Processing through Gemini AI...";
+        resDiv.innerText = "Processing...";
         
-        const response = await fetch('/ai-task', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({type, prompt})
-        });
-        const data = await response.json();
-        resDiv.innerText = data.result;
+        try {
+            const response = await fetch('/ai-task', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({type: 'dev', prompt: prompt})
+            });
+            const data = await response.json();
+            resDiv.innerText = data.result || data.message;
+        } catch (e) {
+            resDiv.innerText = "Error connecting to AI.";
+        }
     }
 
-    async function processWP() {
+    async function runWP() {
         const url = document.getElementById('wpUrl').value;
         const resDiv = document.getElementById('wpRes');
+        if(!url) return;
         resDiv.style.display = "block";
-        resDiv.innerText = "Scanning Site...";
+        resDiv.innerText = "Scanning...";
 
-        const response = await fetch('/analyze-wp', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({url})
-        });
-        const data = await response.json();
-        if(data.status === "success") {
-            resDiv.innerHTML = `<b>Theme:</b> ${data.theme}<br><br><b>Plugins:</b><br>` + 
-                               data.plugins.map(p => `<span class="plugin-tag">${p}</span>`).join('');
-        } else {
-            resDiv.innerText = "Error scanning site.";
+        try {
+            const response = await fetch('/analyze-wp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url: url})
+            });
+            const data = await response.json();
+            if(data.status === "success") {
+                resDiv.innerHTML = `<b>Theme:</b> ${data.theme}<br><br><b>Plugins:</b><br>` + 
+                                   data.plugins.map(p => `<span class="plugin-tag">${p}</span>`).join('');
+            } else {
+                resDiv.innerText = "Not a WordPress site or unreachable.";
+            }
+        } catch (e) {
+            resDiv.innerText = "Server Error.";
         }
     }
 </script>
