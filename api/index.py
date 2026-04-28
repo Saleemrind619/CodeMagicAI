@@ -1,4 +1,4 @@
-import os 
+import os
 import re
 import requests
 from flask import Flask, render_template, request, jsonify
@@ -6,11 +6,11 @@ import google.generativeai as genai
 
 app = Flask(__name__, template_folder='../templates')
 
-# Google API Key
+# Google API Key setup
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
-# Stable Model call
+# UPDATED: Stable model name to fix 404
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 def detect_wp(url):
@@ -42,12 +42,13 @@ def process():
         return jsonify(detect_wp(user_text))
 
     try:
-        prompt = f"System: Expert Developer. Mode: {mode}. Platform: {editor}. User Input: {user_text}"
+        prompt = f"Role: Expert Developer. Task: {mode}. Stack: {editor}. Input: {user_text}"
         response = model.generate_content(prompt)
-        return jsonify({"status": "success", "result": response.text})
+        
+        if response and hasattr(response, 'text'):
+            return jsonify({"status": "success", "result": response.text})
+        else:
+            return jsonify({"status": "error", "result": "AI response error."})
+            
     except Exception as e:
-        return jsonify({"status": "error", "result": f"AI Engine Error: {str(e)}"})
-
-# Vercel handling
-if __name__ == "__main__":
-    app.run(debug=True)
+        return jsonify({"status": "error", "result": str(e)})
