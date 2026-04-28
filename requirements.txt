@@ -2,3 +2,5 @@ flask
 flask-cors
 google-genai
 gunicorn
+requests
+beautifulsoup4
