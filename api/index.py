@@ -67,3 +67,17 @@ def process():
 
 # Vercel handler
 app_handler = app
+def get_ai_response(prompt):
+    try:
+        # Yahan hum model ka pura naam (models/...) likh rahe hain
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        # Agar Flash na chale, to automatically Pro model par switch ho jaye
+        try:
+            model = genai.GenerativeModel('models/gemini-pro')
+            response = model.generate_content(prompt)
+            return response.text
+        except:
+            return "Error: Google is blocking this API Key. Please create a NEW key in AI Studio."
