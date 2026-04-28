@@ -8,7 +8,7 @@ import google.generativeai as genai
 app = Flask(__name__, template_folder='../templates')
 
 # Environment Variable se Key uthana
-API_KEY = os.environ.get("AIzaSyA5ZT3pD6JP9TpFbE_YOLid28i4Fj5akO0")
+API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
