@@ -1,7 +1,6 @@
 import os
-import re 
+import re
 import requests
-from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, jsonify
 import google.generativeai as genai
 
@@ -30,18 +29,24 @@ def detect_wp(url):
 def index():
     return render_template('index.html')
 
-@app.route('/ai-task', methods=['POST'])
-def ai_task():
-    data = request.json
-    task = data.get('type')
-    prompt = data.get('prompt')
+@app.route('/process', methods=['POST'])
+def process():
+    mode = request.form.get('mode')
+    user_text = request.form.get('text')
+    editor = request.form.get('editor')
+    
+    # Agar user ne WordPress detect manga hai
+    if mode == 'wp_detect':
+        return jsonify(detect_wp(user_text))
+
     try:
-        response = model.generate_content(f"Act as an expert developer. Task: {task}. Input: {prompt}")
+        # AI Task Logic
+        prompt = f"Act as an expert developer. Environment: {editor}. Task: {mode}. Input: {user_text}"
+        response = model.generate_content(prompt)
         return jsonify({"status": "success", "result": response.text})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        return jsonify({"status": "error", "result": str(e)})
 
-@app.route('/analyze-wp', methods=['POST'])
-def analyze_wp():
-    data = request.json
-    return jsonify(detect_wp(data.get('url', '')))
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
