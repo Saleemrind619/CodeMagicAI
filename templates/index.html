@@ -6,16 +6,30 @@
     <title>CodeMagic AI | Enterprise</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #050a15; color: white; font-family: sans-serif; overflow-x: hidden; cursor: none; }
+        /* Original Cursor visible rakha hai aur smooth scrolling set ki hai */
+        body { background-color: #050a15; color: white; font-family: sans-serif; overflow-x: hidden; cursor: auto; }
         .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
         
-        /* --- DOUBLE MAGNETIC CURSOR --- */
-        #cursor-outer { position: fixed; width: 40px; height: 40px; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 50%; pointer-events: none; z-index: 9999; transition: transform 0.15s ease-out, width 0.3s, height 0.3s; }
-        #cursor-inner { position: fixed; width: 6px; height: 6px; background: #10b981; border-radius: 50%; pointer-events: none; z-index: 10000; box-shadow: 0 0 10px #10b981; }
-        body.hovering #cursor-outer { width: 60px; height: 60px; background: rgba(59, 130, 246, 0.1); border-color: #10b981; }
+        /* --- REFINED DOUBLE CIRCLE CURSOR --- */
+        #cursor-outer { 
+            position: fixed; width: 25px; height: 25px; /* Mazeed Chota Size */
+            border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 50%; 
+            pointer-events: none; z-index: 9999; 
+            transition: transform 0.2s ease-out; /* Smooth Delay Effect */
+        }
+        #cursor-inner { 
+            position: fixed; width: 12px; height: 12px; /* Dot ki jagah chota circle */
+            border: 1px solid #10b981; border-radius: 50%; 
+            pointer-events: none; z-index: 10000; 
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Hover Effect */
+        body.hovering #cursor-outer { width: 35px; height: 35px; border-color: #10b981; background: rgba(16, 185, 129, 0.05); }
 
         .btn-magic { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .btn-magic:hover { transform: translateY(-3px); filter: brightness(1.1); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        .btn-magic:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
     </style>
@@ -73,13 +87,16 @@
     </div>
 
     <script>
-        // --- DOUBLE CURSOR LOGIC ---
+        // --- IMPROVED DOUBLE CIRCLE FOLLOWER ---
         const outer = document.getElementById('cursor-outer');
         const inner = document.getElementById('cursor-inner');
+        
         document.addEventListener('mousemove', e => {
             const x = e.clientX; const y = e.clientY;
-            inner.style.left = x + 'px'; inner.style.top = y + 'px';
-            outer.style.left = (x - 20) + 'px'; outer.style.top = (y - 20) + 'px';
+            // Inner circle (chota) thora tezi se follow karega
+            inner.style.transform = `translate3d(${x - 6}px, ${y - 6}px, 0)`;
+            // Outer circle (bara) thora delay se follow karega (smooth look)
+            outer.style.transform = `translate3d(${x - 12.5}px, ${y - 12.5}px, 0)`;
         });
 
         document.querySelectorAll('button, select, label').forEach(el => {
@@ -87,7 +104,6 @@
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
 
-        // --- FILE FUNCTIONS ---
         function updateFile() {
             const inp = document.getElementById('fileInput');
             if(inp.files[0]) {
@@ -103,23 +119,18 @@
             document.getElementById('lTxt').innerText = "ATTACH FILE / LAYOUT";
         }
 
-        // --- BACKEND CALL ---
         async function send(mode) {
             const text = document.getElementById('userInput').value;
             if(!text) return alert("Please provide input.");
-            
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resBox').classList.add('hidden');
-
             const fd = new FormData();
             fd.append('text', text); fd.append('mode', mode);
             fd.append('editor', document.getElementById('targetEditor').value);
-
             try {
                 const res = await fetch('/process', { method: 'POST', body: fd });
                 const data = await res.json();
                 const result = document.getElementById('result');
-                
                 if(mode === 'wp_detect' && data.status === "success") {
                     result.innerHTML = `<span class='text-blue-400'>THEME:</span> ${data.theme}<br><br><span class='text-blue-400'>PLUGINS:</span><br>${data.plugins.join(', ')}`;
                 } else {
