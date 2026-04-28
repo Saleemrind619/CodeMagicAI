@@ -5,32 +5,18 @@ import re
 
 app = Flask(__name__, template_folder='../templates')
 
-def detect_wp_data(url):
+# --- WP Detection Function ---
+def detect_wp(url):
     try:
-        if not url.startswith('http'):
-            url = 'https://' + url
-        
+        if not url.startswith('http'): url = 'https://' + url
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Theme Detection
-        theme_name = "Not Detected"
+        theme = "Not Detected"
         theme_match = re.search(r'wp-content/themes/([^/]+)/', response.text)
-        if theme_match:
-            theme_name = theme_match.group(1).replace('-', ' ').title()
-
-        # Plugin Detection
-        plugins = set()
-        plugin_matches = re.findall(r'wp-content/plugins/([^/]+)/', response.text)
-        for p in plugin_matches:
-            plugins.add(p.replace('-', ' ').title())
-            
-        return {
-            "status": "success",
-            "theme": theme_name,
-            "plugins": list(plugins) if plugins else ["No plugins found or Site is not WordPress"]
-        }
+        if theme_match: theme = theme_match.group(1).replace('-', ' ').title()
+        plugins = set(re.findall(r'wp-content/plugins/([^/]+)/', response.text))
+        plugin_list = [p.replace('-', ' ').title() for p in plugins]
+        return {"status": "success", "theme": theme, "plugins": plugin_list}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -41,8 +27,17 @@ def index():
 @app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.json
-    target_url = data.get('url', '')
-    result = detect_wp_data(target_url)
-    return jsonify(result)
+    return jsonify(detect_wp(data.get('url', '')))
 
-# Vercel focus
+@app.route('/ai-task', methods=['POST'])
+def ai_task():
+    data = request.json
+    task_type = data.get('type') # clone, layout, or fix
+    prompt = data.get('prompt', '')
+    # AI logic connection placeholder
+    result = f"Successfully processed {task_type} request for: {prompt[:50]}..."
+    return jsonify({"status": "success", "result": result})
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
