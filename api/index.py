@@ -2,33 +2,34 @@ import os
 import re
 import requests
 from flask import Flask, render_template, request, jsonify
-import google.generativeai as genai
 
 app = Flask(__name__, template_folder='../templates')
 
-# API Setup
 API_KEY = os.environ.get("GOOGLE_API_KEY")
-genai.configure(api_key=API_KEY)
 
 def get_ai_response(prompt):
+    # Direct API Call using requests (Much more stable for blocked keys)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    
+    headers = {'Content-Type': 'application/json'}
+    data = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+
     try:
-        # Simple and direct model call to avoid version errors
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        if response and hasattr(response, 'text'):
-            return response.text
+        response = requests.post(url, headers=headers, json=data, timeout=15)
+        res_data = response.json()
+        
+        if response.status_code == 200:
+            return res_data['candidates'][0]['content']['parts'][0]['text']
         else:
-            return "Error: AI response is empty or blocked by safety filters."
+            error_msg = res_data.get('error', {}).get('message', 'Unknown API Error')
+            return f"Error: Google says - {error_msg}"
+            
     except Exception as e:
-        # Agar 404 aaye to purana model try karega auto-healing ke liye
-        if "404" in str(e):
-            try:
-                legacy_model = genai.GenerativeModel('gemini-pro')
-                response = legacy_model.generate_content(prompt)
-                return response.text
-            except:
-                return f"Error: Model not found. Check your API Key permissions."
-        return f"Error: {str(e)}"
+        return f"System Error: {str(e)}"
 
 def detect_wp(url):
     try:
@@ -58,26 +59,12 @@ def process():
     if mode == 'wp_detect':
         return jsonify(detect_wp(user_text))
 
-    result_text = get_ai_response(f"Expert Developer. Task: {mode}. Stack: {editor}. Input: {user_text}")
+    full_prompt = f"Act as an expert developer for {editor}. Task: {mode}. Input: {user_text}"
+    result_text = get_ai_response(full_prompt)
     
     if result_text.startswith("Error:"):
         return jsonify({"status": "error", "result": result_text})
     
     return jsonify({"status": "success", "result": result_text})
 
-# Vercel handler
 app_handler = app
-def get_ai_response(prompt):
-    try:
-        # Yahan hum model ka pura naam (models/...) likh rahe hain
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        # Agar Flash na chale, to automatically Pro model par switch ho jaye
-        try:
-            model = genai.GenerativeModel('models/gemini-pro')
-            response = model.generate_content(prompt)
-            return response.text
-        except:
-            return "Error: Google is blocking this API Key. Please create a NEW key in AI Studio."
