@@ -6,7 +6,7 @@ import google.generativeai as genai
 
 app = Flask(__name__, template_folder='../templates')
 
-# Google API Key setup
+# Google API Key setup 
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
