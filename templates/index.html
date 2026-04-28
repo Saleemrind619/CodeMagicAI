@@ -5,130 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CodeMagic AI | Neural Engine</title>
     <style>
-        :root { --neon: #10b981; --dark-bg: #010409; --card-bg: #0d1117; --text: #c9d1d9; }
-        body { background: var(--dark-bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; overflow-x: hidden; }
-        
-        /* Navigation Tabs */
-        .nav-container { background: var(--card-bg); border-bottom: 1px solid #30363d; display: flex; justify-content: center; position: sticky; top: 0; z-index: 100; }
-        .tab { padding: 15px 20px; cursor: pointer; color: #8b949e; font-weight: 600; border-bottom: 2px solid transparent; transition: 0.3s; }
-        .tab.active { color: var(--neon); border-bottom: 2px solid var(--neon); background: rgba(16, 185, 129, 0.05); }
-
-        .container { max-width: 900px; margin: 40px auto; padding: 20px; }
-        header { margin-bottom: 40px; }
-        .glow-text { color: var(--neon); text-shadow: 0 0 10px rgba(16, 185, 129, 0.4); font-size: 2.5rem; }
-
-        .feature-card { background: var(--card-bg); border: 1px solid #30363d; border-radius: 12px; padding: 30px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .feature-card.active { display: block; animation: fadeIn 0.5s ease; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        input, textarea { width: 100%; padding: 15px; background: #010409; border: 1px solid #30363d; border-radius: 8px; color: white; margin: 15px 0; box-sizing: border-box; }
-        button { background: var(--neon); color: black; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; }
-        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(16, 185, 129, 0.4); }
-
-        .result-box { margin-top: 20px; padding: 15px; background: #161b22; border-radius: 8px; border-left: 4px solid var(--neon); display: none; }
-        .plugin-tag { display: inline-block; background: #21262d; border: 1px solid var(--neon); padding: 4px 12px; border-radius: 15px; margin: 5px; font-size: 12px; }
-
-        .wa-float { position: fixed; bottom: 20px; right: 20px; background: #25d366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 15px rgba(0,0,0,0.4); z-index: 1000; }
-        footer { margin-top: 80px; padding: 40px; border-top: 1px solid #30363d; text-align: center; font-size: 0.8rem; color: #8b949e; }
+        body { background-color: #0d1117; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .container { max-width: 700px; margin: 50px auto; }
+        h1 { color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); font-size: 2.5rem; }
+        .tool-box { background: #161b22; border: 1px solid #30363d; padding: 25px; border-radius: 12px; margin-bottom: 30px; }
+        input, textarea { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #010409; color: white; }
+        button { padding: 12px 25px; background: #10b981; border: none; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { transform: scale(1.05); box-shadow: 0 0 10px #10b981; }
+        .result { margin-top: 15px; color: #10b981; font-family: monospace; white-space: pre-wrap; text-align: left; padding: 10px; background: #010409; border-radius: 5px; display: none; }
+        .plugin-tag { display: inline-block; background: #21262d; border: 1px solid #10b981; padding: 4px 10px; border-radius: 15px; margin: 4px; font-size: 12px; }
+        footer { margin-top: 50px; color: #888; font-size: 0.9rem; border-top: 1px solid #333; padding-top: 20px; }
+        .wa-float { position: fixed; bottom: 20px; right: 20px; background: #25d366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
-<div class="nav-container">
-    <div class="tab active" onclick="openTab(event, 'clone')">🌐 Clone</div>
-    <div class="tab" onclick="openTab(event, 'layout')">🎨 Layout</div>
-    <div class="tab" onclick="openTab(event, 'fix')">🛠️ Fix Bug</div>
-    <div class="tab" onclick="openTab(event, 'wp')">🔍 WP Detect</div>
-</div>
-
 <div class="container">
-    <header>
-        <h1 class="glow-text">CodeMagic AI</h1>
-        <p>Neural Engine Active . . . Ready for Deployment</p>
-    </header>
+    <h1>CodeMagic AI</h1>
+    <p style="color: #8b949e;">Neural Engine v3.0 Active</p>
 
-    <div id="clone" class="feature-card active">
-        <h3>Website Clone AI</h3>
-        <input type="text" id="cloneUrl" placeholder="Enter URL to Clone (e.g. apple.com)">
-        <button onclick="handleAI('clone', 'cloneUrl')">Initialize Cloning</button>
-        <div id="cloneRes" class="result-box"></div>
+    <div class="tool-box">
+        <h3>Clone / Layout / Bug Fix</h3>
+        <textarea id="aiPrompt" rows="4" placeholder="Describe layout, paste code to fix, or enter URL to clone..."></textarea>
+        <button onclick="processAI('general')">Execute Neural Task</button>
+        <div id="aiRes" class="result"></div>
     </div>
 
-    <div id="layout" class="feature-card">
-        <h3>Layout to Code</h3>
-        <textarea id="layoutPrompt" rows="4" placeholder="Describe the layout (e.g. 'A dark landing page for a coffee shop with 3 pricing tables')"></textarea>
-        <button onclick="handleAI('layout', 'layoutPrompt')">Generate Code</button>
-        <div id="layoutRes" class="result-box"></div>
-    </div>
-
-    <div id="fix" class="feature-card">
-        <h3>Neural Bug Fixer</h3>
-        <textarea id="fixPrompt" rows="5" placeholder="Paste your buggy code here..."></textarea>
-        <button onclick="handleAI('fix', 'fixPrompt')">Fix My Code</button>
-        <div id="fixRes" class="result-box"></div>
-    </div>
-
-    <div id="wp" class="feature-card">
+    <div class="tool-box">
         <h3>WP Theme & Plugin Detector</h3>
         <input type="text" id="wpUrl" placeholder="Enter WordPress Site URL">
-        <button onclick="handleWP()">Scan Ecosystem</button>
-        <div id="wpRes" class="result-box">
-            <p>Theme: <span id="themeName" style="color:var(--neon)"></span></p>
-            <div id="pluginList"></div>
-        </div>
+        <button onclick="processWP()">Scan Ecosystem</button>
+        <div id="wpRes" class="result"></div>
     </div>
+
+    <footer>
+        <p>&copy; 2026 CodeMagic AI | <a href="#" style="color:#10b981; text-decoration:none;">Privacy Policy</a></p>
+    </footer>
 </div>
 
-<footer>
-    <p>&copy; 2026 CodeMagic AI | <a href="/privacy" style="color:var(--neon); text-decoration:none;">Privacy Policy</a></p>
-</footer>
-
 <a href="https://wa.me/923111189900" class="wa-float" target="_blank">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="35" alt="WhatsApp">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="35">
 </a>
 
 <script>
-    function openTab(evt, tabName) {
-        document.querySelectorAll('.feature-card').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById(tabName).classList.add('active');
-        evt.currentTarget.classList.add('active');
-    }
-
-    async function handleAI(type, inputId) {
-        const prompt = document.getElementById(inputId).value;
-        const resBox = document.querySelector(`#${type} .result-box`);
-        resBox.style.display = "block";
-        resBox.innerText = "Analyzing through Neural Engine...";
+    async function processAI(type) {
+        const prompt = document.getElementById('aiPrompt').value;
+        const resDiv = document.getElementById('aiRes');
+        resDiv.style.display = "block";
+        resDiv.innerText = "Processing through Gemini AI...";
         
-        const res = await fetch('/ai-task', {
+        const response = await fetch('/ai-task', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({type, prompt})
         });
-        const data = await res.json();
-        resBox.innerText = data.result;
+        const data = await response.json();
+        resDiv.innerText = data.result;
     }
 
-    async function handleWP() {
+    async function processWP() {
         const url = document.getElementById('wpUrl').value;
-        const resBox = document.getElementById('wpRes');
-        resBox.style.display = "block";
-        resBox.innerText = "Scanning WordPress Directory...";
+        const resDiv = document.getElementById('wpRes');
+        resDiv.style.display = "block";
+        resDiv.innerText = "Scanning Site...";
 
-        const res = await fetch('/analyze', {
+        const response = await fetch('/analyze-wp', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({url})
         });
-        const data = await res.json();
-        
+        const data = await response.json();
         if(data.status === "success") {
-            resBox.innerHTML = `<p>Theme: <span style="color:var(--neon)">${data.theme}</span></p>
-                                <div>${data.plugins.map(p => `<span class="plugin-tag">${p}</span>`).join('')}</div>`;
+            resDiv.innerHTML = `<b>Theme:</b> ${data.theme}<br><br><b>Plugins:</b><br>` + 
+                               data.plugins.map(p => `<span class="plugin-tag">${p}</span>`).join('');
         } else {
-            resBox.innerText = "Error: Site not reachable.";
+            resDiv.innerText = "Error scanning site.";
         }
     }
 </script>
