@@ -6,15 +6,17 @@ import google.generativeai as genai
 
 app = Flask(__name__, template_folder='../templates')
 
-# Environment Setup
+# Environment Variable se Key uthana
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+
+# UPDATED: 'gemini-1.5-flash-latest' is more stable for v1beta or v1
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 def detect_wp(url):
     try:
         if not url.startswith('http'): url = 'https://' + url
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         response = requests.get(url, headers=headers, timeout=10)
         theme = "Not Detected"
         theme_match = re.search(r'wp-content/themes/([^/]+)/', response.text)
@@ -41,7 +43,14 @@ def process():
     try:
         # Task mapping for AI
         prompt = f"Expert Developer. Task: {mode}. Target Environment: {editor}. Input: {user_text}"
+        # AI content generate karne ka sahi tareeqa
         response = model.generate_content(prompt)
-        return jsonify({"status": "success", "result": response.text})
+        
+        # Check if response has text
+        if response and response.text:
+            return jsonify({"status": "success", "result": response.text})
+        else:
+            return jsonify({"status": "error", "result": "AI returned empty response."})
+            
     except Exception as e:
         return jsonify({"status": "error", "result": f"AI Engine Error: {str(e)}"})
