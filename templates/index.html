@@ -1,98 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeMagic AI | Neural Engine</title>
-    <style>
-        body { background-color: #0d1117; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
-        .container { max-width: 700px; margin: 40px auto; }
-        h1 { color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.5); font-size: 2.5rem; margin-bottom: 5px; }
-        .status { color: #8b949e; font-size: 0.8rem; margin-bottom: 30px; letter-spacing: 1px; }
-        .tool-box { background: #161b22; border: 1px solid #30363d; padding: 25px; border-radius: 12px; margin-bottom: 25px; text-align: left; }
-        h3 { border-left: 4px solid #10b981; padding-left: 10px; margin-top: 0; }
-        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #010409; color: white; box-sizing: border-box; font-size: 1rem; }
-        button { width: 100%; padding: 12px; background: #10b981; border: none; border-radius: 8px; color: black; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button:hover { background: #12d393; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); transform: translateY(-2px); }
-        .result { margin-top: 15px; padding: 15px; background: #010409; border-radius: 8px; border: 1px dashed #30363d; color: #10b981; display: none; white-space: pre-wrap; font-family: monospace; }
-        .plugin-tag { display: inline-block; background: #21262d; border: 1px solid #10b981; padding: 4px 10px; border-radius: 15px; margin: 4px; font-size: 12px; }
-        .wa-float { position: fixed; bottom: 20px; right: 20px; background: #25d366; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    </style>
-</head>
-<body>
+import os
+import re
+import requests
+from flask import Flask, render_template, request, jsonify
+import google.generativeai as genai
 
-<div class="container">
-    <h1>CodeMagic AI</h1>
-    <div class="status">NEURAL ENGINE ACTIVE • READY</div>
+app = Flask(__name__, template_folder='../templates')
 
-    <div class="tool-box">
-        <h3>AI Developer Suite</h3>
-        <textarea id="aiPrompt" rows="5" placeholder="Enter URL to clone, code to fix, or layout details..."></textarea>
-        <button onclick="runAI()">Execute AI Task</button>
-        <div id="aiRes" class="result"></div>
-    </div>
+# Environment Variable se Key uthana
+API_KEY = os.environ.get("GOOGLE_API_KEY")
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-    <div class="tool-box">
-        <h3>WP Ecosystem Scan</h3>
-        <input type="text" id="wpUrl" placeholder="Enter WordPress Site URL (e.g. example.com)">
-        <button onclick="runWP()">Detect Theme & Plugins</button>
-        <div id="wpRes" class="result"></div>
-    </div>
+def detect_wp(url):
+    try:
+        if not url.startswith('http'): url = 'https://' + url
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=10)
+        theme = "Not Detected"
+        theme_match = re.search(r'wp-content/themes/([^/]+)/', response.text)
+        if theme_match: theme = theme_match.group(1).replace('-', ' ').title()
+        plugins = set(re.findall(r'wp-content/plugins/([^/]+)/', response.text))
+        plugin_list = [p.replace('-', ' ').title() for p in plugins]
+        return {"status": "success", "theme": theme, "plugins": plugin_list}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
-    <footer style="margin-top: 40px; color: #8b949e; font-size: 0.8rem;">
-        &copy; 2026 CodeMagic AI | <a href="/privacy" style="color:#10b981; text-decoration:none;">Privacy Policy</a>
-    </footer>
-</div>
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-<a href="https://wa.me/923111189900" class="wa-float" target="_blank">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="35">
-</a>
+@app.route('/process', methods=['POST'])
+def process():
+    mode = request.form.get('mode')
+    user_text = request.form.get('text')
+    editor = request.form.get('editor')
+    
+    # Agar user ne WordPress detect manga hai
+    if mode == 'wp_detect':
+        return jsonify(detect_wp(user_text))
 
-<script>
-    async function runAI() {
-        const prompt = document.getElementById('aiPrompt').value;
-        const resDiv = document.getElementById('aiRes');
-        if(!prompt) return;
-        resDiv.style.display = "block";
-        resDiv.innerText = "Processing...";
-        
-        try {
-            const response = await fetch('/ai-task', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({type: 'dev', prompt: prompt})
-            });
-            const data = await response.json();
-            resDiv.innerText = data.result || data.message;
-        } catch (e) {
-            resDiv.innerText = "Error connecting to AI.";
-        }
-    }
+    try:
+        # AI Task Logic
+        prompt = f"Act as an expert developer. Environment: {editor}. Task: {mode}. Input: {user_text}"
+        response = model.generate_content(prompt)
+        return jsonify({"status": "success", "result": response.text})
+    except Exception as e:
+        return jsonify({"status": "error", "result": str(e)})
 
-    async function runWP() {
-        const url = document.getElementById('wpUrl').value;
-        const resDiv = document.getElementById('wpRes');
-        if(!url) return;
-        resDiv.style.display = "block";
-        resDiv.innerText = "Scanning...";
-
-        try {
-            const response = await fetch('/analyze-wp', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({url: url})
-            });
-            const data = await response.json();
-            if(data.status === "success") {
-                resDiv.innerHTML = `<b>Theme:</b> ${data.theme}<br><br><b>Plugins:</b><br>` + 
-                                   data.plugins.map(p => `<span class="plugin-tag">${p}</span>`).join('');
-            } else {
-                resDiv.innerText = "Not a WordPress site or unreachable.";
-            }
-        } catch (e) {
-            resDiv.innerText = "Server Error.";
-        }
-    }
-</script>
-</body>
-</html>
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
