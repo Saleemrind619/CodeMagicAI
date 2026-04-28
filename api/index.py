@@ -1,11 +1,17 @@
-from flask import Flask, render_template, request, jsonify
+import os
+import re
 import requests
 from bs4 import BeautifulSoup
-import re
+from flask import Flask, render_template, request, jsonify
+import google.generativeai as genai
 
 app = Flask(__name__, template_folder='../templates')
 
-# --- WP Detection Function ---
+# Environment Variable se Key uthana
+API_KEY = os.environ.get("AIzaSyA5ZT3pD6JP9TpFbE_YOLid28i4Fj5akO0")
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
 def detect_wp(url):
     try:
         if not url.startswith('http'): url = 'https://' + url
@@ -24,20 +30,18 @@ def detect_wp(url):
 def index():
     return render_template('index.html')
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    data = request.json
-    return jsonify(detect_wp(data.get('url', '')))
-
 @app.route('/ai-task', methods=['POST'])
 def ai_task():
     data = request.json
-    task_type = data.get('type') # clone, layout, or fix
-    prompt = data.get('prompt', '')
-    # AI logic connection placeholder
-    result = f"Successfully processed {task_type} request for: {prompt[:50]}..."
-    return jsonify({"status": "success", "result": result})
+    task = data.get('type')
+    prompt = data.get('prompt')
+    try:
+        response = model.generate_content(f"Act as an expert developer. Task: {task}. Input: {prompt}")
+        return jsonify({"status": "success", "result": response.text})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
-@app.route('/privacy')
-def privacy():
-    return render_template('privacy.html')
+@app.route('/analyze-wp', methods=['POST'])
+def analyze_wp():
+    data = request.json
+    return jsonify(detect_wp(data.get('url', '')))
