@@ -4,3 +4,4 @@ google-genai
 gunicorn
 requests
 beautifulsoup4
+google-generativeai
