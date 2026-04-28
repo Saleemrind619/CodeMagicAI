@@ -6,27 +6,35 @@
     <title>CodeMagic AI | Enterprise</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Original Cursor visible rakha hai aur smooth scrolling set ki hai */
+        /* Original Cursor ko visible rakha hai */
         body { background-color: #050a15; color: white; font-family: sans-serif; overflow-x: hidden; cursor: auto; }
         .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
         
-        /* --- REFINED DOUBLE CIRCLE CURSOR --- */
-        #cursor-outer { 
-            position: fixed; width: 25px; height: 25px; /* Mazeed Chota Size */
-            border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 50%; 
-            pointer-events: none; z-index: 9999; 
-            transition: transform 0.2s ease-out; /* Smooth Delay Effect */
+        /* --- DOUBLE CIRCLE CURSOR (LOCKED TO TIP) --- */
+        #cursor-outer, #cursor-inner { 
+            position: fixed; 
+            top: 0; left: 0; 
+            pointer-events: none; 
+            z-index: 9999; 
+            border-radius: 50%;
+            will-change: transform;
         }
+
+        #cursor-outer { 
+            width: 20px; height: 20px; 
+            border: 1px solid rgba(59, 130, 246, 0.5); 
+            transition: transform 0.15s ease-out; /* Halki si smoothness */
+        }
+
         #cursor-inner { 
-            position: fixed; width: 12px; height: 12px; /* Dot ki jagah chota circle */
-            border: 1px solid #10b981; border-radius: 50%; 
-            pointer-events: none; z-index: 10000; 
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
-            transition: transform 0.1s ease-out;
+            width: 8px; height: 8px; 
+            border: 1px solid #10b981; 
+            box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+            transition: transform 0.05s ease-out; /* Ye mouse ke sath bilkul chipka rahega */
         }
 
         /* Hover Effect */
-        body.hovering #cursor-outer { width: 35px; height: 35px; border-color: #10b981; background: rgba(16, 185, 129, 0.05); }
+        body.hovering #cursor-outer { transform: scale(1.5); border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
 
         .btn-magic { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .btn-magic:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
@@ -87,23 +95,28 @@
     </div>
 
     <script>
-        // --- IMPROVED DOUBLE CIRCLE FOLLOWER ---
+        // --- PRECISION CURSOR SCRIPT ---
         const outer = document.getElementById('cursor-outer');
         const inner = document.getElementById('cursor-inner');
         
         document.addEventListener('mousemove', e => {
-            const x = e.clientX; const y = e.clientY;
-            // Inner circle (chota) thora tezi se follow karega
-            inner.style.transform = `translate3d(${x - 6}px, ${y - 6}px, 0)`;
-            // Outer circle (bara) thora delay se follow karega (smooth look)
-            outer.style.transform = `translate3d(${x - 12.5}px, ${y - 12.5}px, 0)`;
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            // Mouse ki noke par lane ke liye (Coordinate - Half Width)
+            // Inner Circle (8px wide) -> x-4, y-4
+            // Outer Circle (20px wide) -> x-10, y-10
+            inner.style.transform = `translate3d(${x - 4}px, ${y - 4}px, 0)`;
+            outer.style.transform = `translate3d(${x - 10}px, ${y - 10}px, 0)`;
         });
 
-        document.querySelectorAll('button, select, label').forEach(el => {
+        // Hover Effect
+        document.querySelectorAll('button, select, label, textarea').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
 
+        // File Functions
         function updateFile() {
             const inp = document.getElementById('fileInput');
             if(inp.files[0]) {
