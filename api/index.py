@@ -10,17 +10,8 @@ app = Flask(__name__, template_folder='../templates')
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
-# Use 'gemini-1.5-flash' with specific safety and generation config
-# Ye model 404 nahi dega agar API key valid hai
-model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
-    generation_config={
-        "temperature": 0.7,
-        "top_p": 0.95,
-        "top_k": 64,
-        "max_output_tokens": 8192,
-    }
-)
+# Stable model call to avoid 404
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def detect_wp(url):
     try:
@@ -50,14 +41,8 @@ def process():
         return jsonify(detect_wp(user_text))
 
     try:
-        prompt = f"Expert Developer Task. Mode: {mode}. Stack: {editor}. Input: {user_text}"
-        # Error handling for empty response
+        prompt = f"System: Expert Developer. Mode: {mode}. Platform: {editor}. User Input: {user_text}"
         response = model.generate_content(prompt)
-        if hasattr(response, 'text'):
-            return jsonify({"status": "success", "result": response.text})
-        else:
-            return jsonify({"status": "error", "result": "AI Safety filter triggered or empty response."})
-            
+        return jsonify({"status": "success", "result": response.text})
     except Exception as e:
-        # Check if it's a model error
-        return jsonify({"status": "error", "result": f"System Alert: {str(e)}"})
+        return jsonify({"status": "error", "result": f"AI Engine Error: {str(e)}"})
