@@ -13,7 +13,8 @@
             background-color: #050a15; 
             color: white; 
             font-family: sans-serif; 
-            cursor: none; /* Hidden because we use custom double circle */
+            /* Default Arrow Cursor Wapis Le Aaye */
+            cursor: default; 
             overflow-x: hidden;
         }
         .glass { 
@@ -22,7 +23,7 @@
             border: 1px solid rgba(255,255,255,0.05); 
         }
 
-        /* --- DOUBLE CIRCLE CURSOR --- */
+        /* --- DOUBLE CIRCLE CURSOR (REFINED) --- */
         #cursor-outer, #cursor-inner {
             position: fixed;
             top: 0; left: 0;
@@ -30,32 +31,36 @@
             z-index: 9999;
             border-radius: 50%;
             will-change: transform;
+            /* Linear transition taake mouse ki nok ke sath chipkay rahen */
+            transition: transform 0.05s linear; 
         }
-        #cursor-outer {
-            width: 35px;
-            height: 35px;
-            border: 1px solid rgba(59, 130, 246, 0.5);
-            transition: transform 0.15s ease-out, width 0.3s, height 0.3s, border-color 0.3s;
-        }
+        
+        /* Chota Circle (Dot ki bajai ab ye circle hai) */
         #cursor-inner {
-            width: 6px;
-            height: 6px;
-            background-color: #10b981;
-            box-shadow: 0 0 10px #10b981;
-            transition: transform 0.05s linear;
+            width: 10px;
+            height: 10px;
+            border: 1.5px solid #10b981;
+            background-color: rgba(16, 185, 129, 0.2);
         }
 
-        /* Hover State - Outer circle expands */
+        /* Bara Circle (Ab pehle se chota kar diya hai) */
+        #cursor-outer {
+            width: 25px;
+            height: 25px;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            transition: transform 0.1s ease-out, width 0.3s, height 0.3s;
+        }
+
+        /* Hover Effect */
         body.hovering-effect #cursor-outer {
-            transform: scale(1.8);
+            width: 40px;
+            height: 40px;
             border-color: #10b981;
             background: rgba(16, 185, 129, 0.1);
         }
 
         /* --- LOGO & UI --- */
         .brand-logo { display: inline-block; transition: all 0.4s ease; }
-        .brand-logo:hover { filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.4)); }
-        
         .i-container { position: relative; display: inline-block; }
         .i-dot {
             position: absolute; top: -2px; left: 50%; transform: translateX(-50%);
@@ -111,7 +116,7 @@
                 <label class="text-xs font-bold text-slate-500 uppercase tracking-widest font-mono">Input Terminal</label>
                 <div class="flex items-center gap-2.5">
                     <div id="fileBox" class="bg-slate-900 px-4 py-2.5 rounded-xl border border-slate-800 flex items-center gap-2 transition-all">
-                        <label for="fileInput" class="cursor-pointer text-[11px] font-bold text-slate-300" id="labelTxt">📎 ATTACH FILE</label>
+                        <label for="fileInput" class="cursor-pointer text-[11px] font-bold text-slate-300" id="labelTxt">📎 ATTACH FILE / LAYOUT</label>
                         <button id="remBtn" onclick="removeFile()" class="hidden text-red-500 font-bold ml-1">✕</button>
                     </div>
                     <input type="file" id="fileInput" class="hidden" onchange="updateFile()">
@@ -123,7 +128,7 @@
 
             <div class="mt-10 grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div class="flex flex-col">
-                    <span class="text-[11px] text-slate-500 mb-2.5 uppercase font-bold tracking-tight">Env</span>
+                    <span class="text-[11px] text-slate-500 mb-2.5 uppercase font-bold tracking-tight">Environment</span>
                     <select id="targetEditor" class="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-sm outline-none cursor-pointer">
                         <option value="elementor">WordPress (Elementor)</option>
                         <option value="tailwind">Tailwind CSS</option>
@@ -147,7 +152,7 @@
     </div>
 
     <script>
-        // --- DOUBLE CIRCLE LOGIC ---
+        // --- PRECISION DOUBLE CIRCLE LOGIC ---
         const inner = document.getElementById('cursor-inner');
         const outer = document.getElementById('cursor-outer');
         
@@ -155,10 +160,9 @@
             const x = e.clientX;
             const y = e.clientY;
             
-            // Inner follows exactly
-            inner.style.transform = `translate3d(${x - 3}px, ${y - 3}px, 0)`;
-            // Outer follows with slight delay
-            outer.style.transform = `translate3d(${x - 17.5}px, ${y - 17.5}px, 0)`;
+            // Mouse ki nok (tip) ke bilkul sath align karne ke liye values adjust ki hain
+            inner.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            outer.style.transform = `translate3d(${x - 8}px, ${y - 8}px, 0)`;
         });
 
         document.querySelectorAll('button, select, label, textarea, .brand-logo').forEach(el => {
@@ -166,29 +170,19 @@
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering-effect'));
         });
 
-        // --- Backend Connection ---
-        async function send(mode) {
-            const text = document.getElementById('userInput').value;
-            if(!text) return alert("Input empty!");
-            
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('resBox').classList.add('hidden');
-            
-            const formData = new FormData();
-            formData.append('text', text);
-            formData.append('mode', mode);
-            formData.append('editor', document.getElementById('targetEditor').value);
-
-            try {
-                const response = await fetch('/process', { method: 'POST', body: formData });
-                const data = await response.json();
-                const result = document.getElementById('result');
-                if(data.status === "success") {
-                    result.innerText = data.result;
-                } else { result.innerText = "Error: " + data.result; }
-                document.getElementById('resBox').classList.remove('hidden');
-            } catch (e) { alert("Server error."); }
-            finally { document.getElementById('loading').classList.add('hidden'); }
+        function updateFile() {
+            const inp = document.getElementById('fileInput');
+            if(inp.files[0]) {
+                document.getElementById('fName').innerText = `[${inp.files[0].name}]`;
+                document.getElementById('remBtn').classList.remove('hidden');
+                document.getElementById('labelTxt').innerText = "CHANGE FILE";
+            }
+        }
+        function removeFile() {
+            document.getElementById('fileInput').value = "";
+            document.getElementById('fName').innerText = "";
+            document.getElementById('remBtn').classList.add('hidden');
+            document.getElementById('labelTxt').innerText = "ATTACH FILE / LAYOUT";
         }
     </script>
 </body>
