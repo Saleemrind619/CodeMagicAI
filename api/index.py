@@ -5,15 +5,16 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__, template_folder='../templates')
 
-# Environment Variable se API Key
+# Vercel Environment Variable
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 def get_ai_response(prompt):
     if not API_KEY:
         return "Error: API Key missing in Vercel settings."
 
-    # Hum yahan 'v1beta' use kar rahe hain kyunke Gemini 1.5 Flash wahan behtar chalta hai
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    # Sab se stable endpoint aur model naming convention
+    # 'gemini-1.5-flash-latest' use kar rahe hain jo v1beta aur v1 dono par chalta hai
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
     
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -29,9 +30,8 @@ def get_ai_response(prompt):
         if response.status_code == 200:
             return res_data['candidates'][0]['content']['parts'][0]['text']
         else:
-            # Deep error check
-            error_info = res_data.get('error', {})
-            msg = error_info.get('message', 'Unknown Error')
+            # Agar ab bhi error aaye to exact detail milegi
+            msg = res_data.get('error', {}).get('message', 'Unknown Error')
             return f"Error: Google API says - {msg}"
             
     except Exception as e:
@@ -47,7 +47,8 @@ def detect_wp(url):
         if theme_match:
             theme = theme_match.group(1).replace('-', ' ').title()
         plugins = set(re.findall(r'wp-content/plugins/([^/]+)/', response.text))
-        return {"status": "success", "theme": theme, "plugins": list(plugins)}
+        plugin_list = [p.replace('-', ' ').title() for p in plugins]
+        return {"status": "success", "theme": theme, "plugins": list(plugin_list)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -64,11 +65,11 @@ def process():
     if mode == 'wp_detect':
         res = detect_wp(user_text)
         if res["status"] == "success":
-            output = f"Theme: {res['theme']}\nPlugins: " + ", ".join(res['plugins'])
+            output = f"Theme: {res['theme']}\nPlugins: " + (", ".join(res['plugins']) if res['plugins'] else "None")
             return jsonify({"status": "success", "result": output})
         return jsonify({"status": "error", "result": res["message"]})
 
-    full_prompt = f"Expert Web Dev Mode: {mode}. Editor: {editor}. Request: {user_text}"
+    full_prompt = f"Role: Expert Web Developer. Task: {mode}. Editor: {editor}. Project: {user_text}"
     result_text = get_ai_response(full_prompt)
     
     if result_text.startswith("Error:"):
