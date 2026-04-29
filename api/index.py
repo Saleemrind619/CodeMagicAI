@@ -12,9 +12,9 @@ def get_ai_response(prompt):
     if not API_KEY:
         return "Error: API Key missing in Vercel settings."
 
-    # Sab se stable endpoint aur model naming convention
-    # 'gemini-1.5-flash-latest' use kar rahe hain jo v1beta aur v1 dono par chalta hai
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
+    # NAYA RASTA: Sab se stable model 'gemini-pro' jo har key par chalta hai
+    # Version 'v1' ke sath stable connection
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={API_KEY}"
     
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -24,14 +24,18 @@ def get_ai_response(prompt):
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        # Timeout barha diya hai taake response lazmi aaye
+        response = requests.post(url, headers=headers, json=payload, timeout=40)
         res_data = response.json()
         
         if response.status_code == 200:
-            return res_data['candidates'][0]['content']['parts'][0]['text']
+            if 'candidates' in res_data:
+                return res_data['candidates'][0]['content']['parts'][0]['text']
+            else:
+                return "Error: AI responded but no content was found."
         else:
-            # Agar ab bhi error aaye to exact detail milegi
-            msg = res_data.get('error', {}).get('message', 'Unknown Error')
+            # Agar ab bhi error aaye, to humein sahi wajah pata chal jayegi
+            msg = res_data.get('error', {}).get('message', 'Unknown Connection Error')
             return f"Error: Google API says - {msg}"
             
     except Exception as e:
@@ -65,11 +69,12 @@ def process():
     if mode == 'wp_detect':
         res = detect_wp(user_text)
         if res["status"] == "success":
-            output = f"Theme: {res['theme']}\nPlugins: " + (", ".join(res['plugins']) if res['plugins'] else "None")
+            output = f"WP Theme: {res['theme']}\nPlugins Found: " + (", ".join(res['plugins']) if res['plugins'] else "None")
             return jsonify({"status": "success", "result": output})
         return jsonify({"status": "error", "result": res["message"]})
 
-    full_prompt = f"Role: Expert Web Developer. Task: {mode}. Editor: {editor}. Project: {user_text}"
+    # AI Prompt Formatting
+    full_prompt = f"Role: Expert Developer. Mode: {mode}. Stack: {editor}. Task: {user_text}"
     result_text = get_ai_response(full_prompt)
     
     if result_text.startswith("Error:"):
