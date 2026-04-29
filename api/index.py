@@ -7,7 +7,7 @@ app = Flask(__name__, template_folder='../templates')
 
 # --- CONFIGURATION ---
 # Agar Vercel se key nahi mil rahi, to aap yahan apni key ' ' ke darmiyan paste kar sakte hain (sirf testing ke liye)
-API_KEY = os.environ.get("GOOGLE_API_KEY", "YAHAN_APNI_KEY_PASTE_KAREIN_AGAR_VERCEL_NA_CHALAY")
+API_KEY = os.environ.get("GOOGLE_API_KEY", "AIzaSyDL3vAeHHhwdwf-Sgj5kGNRNNbZiyxsDCY")
 
 def get_ai_response(prompt):
     if not API_KEY or "YAHAN_" in API_KEY:
