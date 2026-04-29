@@ -1,59 +1,39 @@
 import os
-import re
 import requests
+import re
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__, template_folder='../templates')
 
-# Vercel key check
-API_KEY = os.environ.get("GOOGLE_API_KEY")
+# --- CONFIGURATION ---
+# Agar Vercel se key nahi mil rahi, to aap yahan apni key ' ' ke darmiyan paste kar sakte hain (sirf testing ke liye)
+API_KEY = os.environ.get("GOOGLE_API_KEY", "YAHAN_APNI_KEY_PASTE_KAREIN_AGAR_VERCEL_NA_CHALAY")
 
 def get_ai_response(prompt):
-    if not API_KEY:
-        return "Error: API Key is missing in Vercel. Please check Environment Variables."
+    if not API_KEY or "YAHAN_" in API_KEY:
+        return "Error: API Key is missing. Please check Vercel Environment Variables."
 
-    # Hum pehle Flash try karenge, phir Pro. Taake error na aaye.
-    models_to_try = [
-        "gemini-1.5-flash", 
-        "gemini-pro"
-    ]
+    # Direct API Call - Sab se stable rasta
+    # Hum 'gemini-pro' use kar rahe hain kyunke ye har region aur har key par chalta hai
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={API_KEY}"
     
-    last_error = ""
-    for model in models_to_try:
-        # 'v1beta' naye accounts aur free tier ke liye zyada stable hai
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={API_KEY}"
-        headers = {'Content-Type': 'application/json'}
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    headers = {'Content-Type': 'application/json'}
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
 
-        try:
-            response = requests.post(url, headers=headers, json=payload, timeout=25)
-            res_data = response.json()
-            
-            if response.status_code == 200:
-                return res_data['candidates'][0]['content']['parts'][0]['text']
-            else:
-                last_error = res_data.get('error', {}).get('message', 'Unknown Error')
-                continue # Agar ye model fail ho to agla try karo
-        except Exception as e:
-            last_error = str(e)
-            continue
-
-    return f"Error: Google API is not accepting the request. Message: {last_error}"
-
-def detect_wp(url):
     try:
-        if not url.startswith('http'): url = 'https://' + url
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, timeout=12)
-        theme = "Not Detected"
-        theme_match = re.search(r'wp-content/themes/([^/]+)/', response.text)
-        if theme_match:
-            theme = theme_match.group(1).replace('-', ' ').title()
-        plugins = set(re.findall(r'wp-content/plugins/([^/]+)/', response.text))
-        plugin_list = [p.replace('-', ' ').title() for p in plugins]
-        return {"status": "success", "theme": theme, "plugins": list(plugin_list)}
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        data = response.json()
+        
+        if response.status_code == 200:
+            return data['candidates'][0]['content']['parts'][0]['text']
+        else:
+            # Google jo error bhej raha hai wahi dikhayen
+            err = data.get('error', {}).get('message', 'Unknown Google Error')
+            return f"Google API Error: {err}"
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return f"Connection Error: {str(e)}"
 
 @app.route('/')
 def index():
@@ -64,20 +44,24 @@ def process():
     mode = request.form.get('mode')
     user_text = request.form.get('text')
     editor = request.form.get('editor')
-    
-    if mode == 'wp_detect':
-        res = detect_wp(user_text)
-        if res["status"] == "success":
-            output = f"WP Theme: {res['theme']}\nPlugins: " + (", ".join(res['plugins']) if res['plugins'] else "None")
-            return jsonify({"status": "success", "result": output})
-        return jsonify({"status": "error", "result": res["message"]})
 
-    full_prompt = f"Expert Web Dev Mode. Context: {mode} for {editor}. Task: {user_text}"
-    result_text = get_ai_response(full_prompt)
+    # WordPress Detection Logic
+    if mode == 'wp_detect':
+        try:
+            target = user_text if user_text.startswith('http') else 'https://' + user_text
+            res = requests.get(target, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+            theme = re.search(r'wp-content/themes/([^/]+)/', res.text)
+            theme_name = theme.group(1).title() if theme else "Unknown"
+            return jsonify({"status": "success", "result": f"WordPress Site Detected!\nTheme: {theme_name}"})
+        except:
+            return jsonify({"status": "error", "result": "Could not scan the website."})
+
+    # AI Generation
+    prompt = f"System: You are an expert dev. Task: {mode}. Editor: {editor}. User Request: {user_text}"
+    response = get_ai_response(prompt)
     
-    if result_text.startswith("Error:"):
-        return jsonify({"status": "error", "result": result_text})
-    
-    return jsonify({"status": "success", "result": result_text})
+    if "Error" in response:
+        return jsonify({"status": "error", "result": response})
+    return jsonify({"status": "success", "result": response})
 
 app_handler = app
