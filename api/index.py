@@ -10,7 +10,7 @@ app = Flask(__name__, template_folder='../templates')
 API_KEY = os.environ.get("GOOGLE_API_KEY", "AIzaSyDL3vAeHHhwdwf-Sgj5kGNRNNbZiyxsDCY")
 
 def get_ai_response(prompt):
-    if not API_KEY or "YAHAN_" in API_KEY:
+    if not API_KEY or "AIzaSyDL3vAeHHhwdwf-Sgj5kGNRNNbZiyxsDCY" in API_KEY:
         return "Error: API Key is missing. Please check Vercel Environment Variables."
 
     # Direct API Call - Sab se stable rasta
