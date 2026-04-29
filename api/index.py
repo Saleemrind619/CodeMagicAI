@@ -5,19 +5,15 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__, template_folder='../templates')
 
-# Environment Variable se API Key lena
+# Environment Variable se API Key
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 def get_ai_response(prompt):
-    """
-    Direct Google API call using requests. 
-    Ye method sab se zyada stable hai Vercel aur Python ke liye.
-    """
     if not API_KEY:
-        return "Error: API Key missing in Vercel Environment Variables."
+        return "Error: API Key missing in Vercel settings."
 
-    # Stable v1 version aur Gemini 1.5 Flash model
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    # Hum yahan 'v1beta' use kar rahe hain kyunke Gemini 1.5 Flash wahan behtar chalta hai
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
     
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -27,39 +23,33 @@ def get_ai_response(prompt):
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=20)
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
         res_data = response.json()
         
         if response.status_code == 200:
-            # Sahi response milne par text extract karna
             return res_data['candidates'][0]['content']['parts'][0]['text']
         else:
-            # Agar Google koi error bhejta hai (maslan Key block hai)
-            error_msg = res_data.get('error', {}).get('message', 'Unknown Google API Error')
-            return f"Error: Google says - {error_msg}"
+            # Deep error check
+            error_info = res_data.get('error', {})
+            msg = error_info.get('message', 'Unknown Error')
+            return f"Error: Google API says - {msg}"
             
     except Exception as e:
-        return f"System Error: Connection failed. {str(e)}"
+        return f"System Error: {str(e)}"
 
 def detect_wp(url):
-    """WordPress Theme aur Plugins detect karne ka logic"""
     try:
-        if not url.startswith('http'): 
-            url = 'https://' + url
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(url, headers=headers, timeout=12)
-        
+        if not url.startswith('http'): url = 'https://' + url
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=15)
         theme = "Not Detected"
         theme_match = re.search(r'wp-content/themes/([^/]+)/', response.text)
         if theme_match:
             theme = theme_match.group(1).replace('-', ' ').title()
-            
         plugins = set(re.findall(r'wp-content/plugins/([^/]+)/', response.text))
-        plugin_list = [p.replace('-', ' ').title() for p in plugins]
-        
-        return {"status": "success", "theme": theme, "plugins": list(plugin_list)}
+        return {"status": "success", "theme": theme, "plugins": list(plugins)}
     except Exception as e:
-        return {"status": "error", "message": f"Could not scan site: {str(e)}"}
+        return {"status": "error", "message": str(e)}
 
 @app.route('/')
 def index():
@@ -71,13 +61,14 @@ def process():
     user_text = request.form.get('text')
     editor = request.form.get('editor')
     
-    # Mode check karna
     if mode == 'wp_detect':
-        return jsonify(detect_wp(user_text))
+        res = detect_wp(user_text)
+        if res["status"] == "success":
+            output = f"Theme: {res['theme']}\nPlugins: " + ", ".join(res['plugins'])
+            return jsonify({"status": "success", "result": output})
+        return jsonify({"status": "error", "result": res["message"]})
 
-    # AI Prompt taiyar karna
-    full_prompt = f"Act as an expert web developer for {editor}. Task: {mode}. User Input: {user_text}. Please provide clean, professional code or advice."
-    
+    full_prompt = f"Expert Web Dev Mode: {mode}. Editor: {editor}. Request: {user_text}"
     result_text = get_ai_response(full_prompt)
     
     if result_text.startswith("Error:"):
@@ -85,5 +76,4 @@ def process():
     
     return jsonify({"status": "success", "result": result_text})
 
-# Vercel handler
 app_handler = app
