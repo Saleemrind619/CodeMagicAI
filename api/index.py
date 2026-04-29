@@ -8,28 +8,35 @@ app = Flask(__name__, template_folder='../templates')
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 def get_ai_response(prompt):
-    # Direct API Call using requests (Much more stable for blocked keys)
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+    # Try multiple combinations of versions and models until one works
+    # Yeh list is liye hai ke agar aik fail ho to doosra chale
+    endpoints = [
+        ("v1", "gemini-1.5-flash"),
+        ("v1beta", "gemini-1.5-flash"),
+        ("v1", "gemini-pro")
+    ]
     
-    headers = {'Content-Type': 'application/json'}
-    data = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
-    }
-
-    try:
-        response = requests.post(url, headers=headers, json=data, timeout=15)
-        res_data = response.json()
+    last_error = ""
+    
+    for version, model in endpoints:
+        url = f"https://generativelanguage.googleapis.com/{version}/models/{model}:generateContent?key={API_KEY}"
+        headers = {'Content-Type': 'application/json'}
+        data = {"contents": [{"parts": [{"text": prompt}]}]}
         
-        if response.status_code == 200:
-            return res_data['candidates'][0]['content']['parts'][0]['text']
-        else:
-            error_msg = res_data.get('error', {}).get('message', 'Unknown API Error')
-            return f"Error: Google says - {error_msg}"
+        try:
+            response = requests.post(url, headers=headers, json=data, timeout=10)
+            res_data = response.json()
             
-    except Exception as e:
-        return f"System Error: {str(e)}"
+            if response.status_code == 200:
+                return res_data['candidates'][0]['content']['parts'][0]['text']
+            else:
+                last_error = res_data.get('error', {}).get('message', 'Unknown Error')
+                continue # Try next combination if this one fails
+        except Exception as e:
+            last_error = str(e)
+            continue
+
+    return f"Error: System tried all versions. Google says: {last_error}"
 
 def detect_wp(url):
     try:
