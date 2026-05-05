@@ -6,146 +6,122 @@
     <title>CodeMagic AI | Enterprise</title>
     <link rel="icon" href="https://fav.farm/🪄" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background-color: #050a15; color: white; font-family: sans-serif; cursor: none; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; }
-        .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        body { background-color: #020617; color: white; font-family: 'Inter', sans-serif; cursor: none; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; }
+        .glass-panel { background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.03); border-radius: 40px; }
         
-        #cursor-outer, #cursor-inner { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; border-radius: 50%; will-change: transform; transition: transform 0.06s linear; }
-        #cursor-inner { width: 8px; height: 8px; border: 1.5px solid #10b981; background: rgba(16, 185, 129, 0.3); }
-        #cursor-outer { width: 22px; height: 22px; border: 1px solid rgba(59, 130, 246, 0.5); }
-        body.hovering-effect #cursor-outer { width: 35px; height: 35px; border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
+        /* Custom Cursor */
+        #cursor-outer, #cursor-inner { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; border-radius: 50%; will-change: transform; transition: transform 0.08s ease-out; }
+        #cursor-inner { width: 6px; height: 6px; background: #10b981; }
+        #cursor-outer { width: 25px; height: 25px; border: 1px solid rgba(16, 185, 129, 0.4); }
 
-        .i-container { position: relative; display: inline-block; }
-        .i-dot { position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; }
-        
-        .btn-magic { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .btn-magic:hover { transform: scale(1.02); }
+        /* Tech Pill Styles */
+        .tech-pill-bar { background: rgba(2, 6, 23, 0.8); border: 1px solid rgba(255,255,255,0.05); border-radius: 100px; padding: 4px; display: flex; gap: 10px; width: fit-content; margin: 20px auto; }
+        .tech-item { padding: 10px 35px; border-radius: 100px; font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; transition: all 0.3s ease; border: 1px solid transparent; cursor: pointer; }
+        .tech-item:hover, .tech-item.active { color: #3b82f6; background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 0 20px rgba(59, 130, 246, 0.1); }
 
-        /* Tech Options Styling */
-        .tech-pill-container { background: rgba(2, 6, 23, 0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 6px; display: flex; justify-content: space-around; align-items: center; width: 100%; max-width: 600px; margin: 0 auto; }
-        .tech-btn { padding: 10px 25px; border-radius: 14px; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s ease; border: 1px solid transparent; }
-        .tech-btn:hover { color: #3b82f6; }
-        .tech-active { background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6 !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.1); }
-        
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        .btn-main { transition: all 0.3s ease; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; }
+        .btn-main:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
         #socialOptions.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .status-badge { border: 1px solid rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.05); }
     </style>
 </head>
-<body class="flex flex-col">
+<body class="p-4 md:p-10">
 
     <div id="cursor-outer"></div>
     <div id="cursor-inner"></div>
 
-    <!-- Floating Chat -->
-    <div onmouseleave="closeChat()" class="fixed bottom-8 right-8 z-[100] flex flex-col-reverse items-center gap-4">
-        <button onclick="toggleSocial()" id="mainChatBtn" class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg relative">
-            <svg id="chatIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" viewBox="0 0 16 16"><path d="M2.678 11.894a1 1 0 0 1 .287.801 11 11 0 0 1-.398 2c1.395-.323 2.247-.697 2.634-.893a1 1 0 0 1 .71-.074A8 8 0 0 0 8 14c3.996 0 7-2.807 7-6s-3.004-6-7-6-7 2.808-7 6c0 1.468.617 2.83 1.678 3.894Z"/></svg>
-            <span id="closeIcon" class="hidden text-white text-2xl font-bold">&times;</span>
-        </button>
-        <div id="socialOptions" class="flex flex-col gap-3 opacity-0 pointer-events-none translate-y-10 transition-all duration-500">
-            <a href="https://www.instagram.com/saleemrind619" target="_blank" class="w-10 h-10 bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" class="w-6 h-6"></a>
-            <a href="https://www.facebook.com/saleemahmadrind" target="_blank" class="w-10 h-10 bg-[#1877F2] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" class="w-5 h-5"></a>
-            <a href="https://wa.me/923111189900" target="_blank" class="w-10 h-10 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" class="w-6 h-6"></a>
+    <!-- Top Header Section -->
+    <header class="max-w-7xl mx-auto w-full flex justify-between items-center mb-10 px-4">
+        <div class="flex items-center gap-6">
+            <h1 class="text-3xl font-black tracking-tighter text-blue-500">CodeMagic AI<span class="text-emerald-400">.</span></h1>
+            <div class="h-4 w-[1px] bg-slate-800"></div>
+            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Enterprise V0.2</span>
         </div>
-    </div>
+        <div class="status-badge px-5 py-2 rounded-full flex items-center gap-3">
+            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
+            <span class="text-[9px] font-black text-emerald-400 uppercase tracking-widest">System Online</span>
+        </div>
+    </header>
 
-    <main class="max-w-7xl mx-auto flex-grow w-full p-6 md:p-10">
-        <!-- Header -->
-        <header class="mb-12 border-b border-slate-800/50 pb-8 flex justify-between items-end">
-            <div>
-                <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent inline-block">
-                    CodeMagic A<span class="i-container text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">i<span class="i-dot animate-pulse"></span></span>
-                </h1>
-                <p class="text-slate-600 text-[11px] mt-1.5 uppercase tracking-[0.4em]">Advanced File & Theme Engine</p>
-            </div>
-            <div class="flex items-center gap-2 text-[10px] text-emerald-400 font-bold bg-emerald-950/30 px-4 py-2 rounded-full border border-emerald-500/20">
-                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                <span class="tracking-widest uppercase">System Online</span>
-            </div>
-        </header>
-
-        <!-- Main Container -->
-        <div class="glass rounded-[2.5rem] p-8 md:p-12 shadow-2xl">
-            <!-- Action Buttons Row -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <button onclick="handleSend('clone')" class="btn-magic bg-blue-600 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">🌐 Clone Website</button>
-                <button onclick="handleSend('layout')" class="btn-magic bg-emerald-600 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">🥞 Layout 2 Code</button>
-                <button onclick="handleSend('debug')" class="btn-magic bg-[#1e293b] py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 border border-slate-700">👾 Neural Debug</button>
-                <button onclick="handleSend('wp_detect')" class="btn-magic bg-indigo-600 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/20">🪄 WP Detect</button>
-            </div>
-
-            <!-- Tech Selector Row -->
-            <div class="mb-10 px-4">
-                <div class="tech-pill-container">
-                    <button onclick="selectTech(this, 'elementor')" onmouseleave="revertTech(this)" class="tech-btn">Elementor</button>
-                    <button onclick="selectTech(this, 'tailwind')" onmouseleave="revertTech(this)" class="tech-btn">Tailwind</button>
-                    <button onclick="selectTech(this, 'react')" onmouseleave="revertTech(this)" class="tech-btn">React / Next.js</button>
+    <main class="max-w-7xl mx-auto w-full flex-grow">
+        <div class="glass-panel p-8 md:p-12 shadow-2xl relative overflow-hidden">
+            <!-- Terminal Header -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-2">
+                    <span class="text-blue-500 font-bold">_</span>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Input Terminal</label>
                 </div>
+                <button class="bg-slate-900/80 border border-slate-800 px-4 py-2 rounded-lg text-[9px] font-bold text-slate-400 hover:bg-slate-800 transition-all">
+                    <i class="fas fa-paperclip mr-2"></i> ATTACH FILE / LAYOUT
+                </button>
             </div>
 
-            <div class="flex justify-between items-center mb-4">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Input Terminal</label>
-                <div class="bg-slate-900 px-4 py-2 rounded-xl border border-slate-800 flex items-center gap-2">
-                    <label for="fileInput" class="cursor-pointer text-[10px] font-bold text-slate-300">📎 ATTACH FILE / LAYOUT</label>
-                    <input type="file" id="fileInput" class="hidden">
-                </div>
+            <!-- Input Area -->
+            <textarea id="userInput" class="w-full h-72 bg-[#020617]/50 border border-slate-800/50 rounded-[2rem] p-8 text-sm font-mono focus:border-blue-500/30 outline-none resize-none transition-all" placeholder="Enter Neural Target URL or Payload Structure..."></textarea>
+
+            <!-- Action Buttons Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+                <button onclick="handleAction('clone')" class="btn-main bg-blue-600 h-14 shadow-lg shadow-blue-900/20"><i class="fas fa-globe"></i> Clone Website</button>
+                <button onclick="handleAction('layout')" class="btn-main bg-emerald-600 h-14 shadow-lg shadow-emerald-900/20"><i class="fas fa-layer-group"></i> Layout 2 Code</button>
+                <button onclick="handleAction('debug')" class="btn-main bg-[#1e293b] h-14 border border-slate-700/50"><i class="fas fa-bug text-yellow-500"></i> Neural Debug</button>
+                <button onclick="handleAction('wp')" class="btn-main bg-indigo-600 h-14 shadow-lg shadow-indigo-900/20"><i class="fas fa-magic"></i> WP Detect</button>
             </div>
 
-            <textarea id="userInput" class="w-full h-80 bg-[#020617] border border-slate-800/50 rounded-3xl p-8 text-sm font-mono focus:border-blue-500/50 outline-none custom-scrollbar" placeholder="Describe layout, paste code, or enter URL..."></textarea>
+            <!-- Environment Pill Selector -->
+            <div class="tech-pill-bar mt-6">
+                <div onclick="setEnv(this)" class="tech-item active">Elementor</div>
+                <div onclick="setEnv(this)" class="tech-item">Tailwind</div>
+                <div onclick="setEnv(this)" class="tech-item">React / Next.js</div>
+            </div>
         </div>
     </main>
 
-    <footer class="mt-auto py-8 border-t border-slate-800/50 bg-slate-950/30">
-        <div class="max-w-7xl mx-auto px-10 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p class="text-slate-500 text-xs uppercase tracking-widest">© 2026 CodeMagic Ai | Official Theme Engine</p>
-            <div class="flex gap-8 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-                <a href="#" class="hover:text-blue-400 transition-colors">Documentation</a>
-                <a href="#" class="hover:text-blue-400 transition-colors">Privacy Policy</a>
-            </div>
+    <!-- Social Chat Widget -->
+    <div onmouseleave="closeSocials()" class="fixed bottom-8 right-8 z-[100] flex flex-col-reverse items-center gap-4">
+        <button onclick="toggleSocials()" class="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all">
+            <i id="chatIco" class="fas fa-comment-alt text-xl text-white"></i>
+        </button>
+        <div id="socialOptions" class="flex flex-col gap-3 opacity-0 pointer-events-none translate-y-10 transition-all duration-500">
+            <a href="https://wa.me/923111189900" target="_blank" class="w-12 h-12 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><i class="fab fa-whatsapp text-xl text-white"></i></a>
+            <a href="https://facebook.com/saleemahmadrind" target="_blank" class="w-12 h-12 bg-[#1877F2] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><i class="fab fa-facebook-f text-xl text-white"></i></a>
+            <a href="https://instagram.com/saleemrind619" target="_blank" class="w-12 h-12 bg-gradient-to-tr from-yellow-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"><i class="fab fa-instagram text-xl text-white"></i></a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-10 py-6 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center px-10 gap-4">
+        <p class="text-[9px] font-bold text-slate-600 uppercase tracking-[0.4em]">© 2026 CodeMagic Ai | Enterprise Edition</p>
+        <div class="flex gap-8">
+            <a href="#" class="text-[9px] font-bold text-slate-600 uppercase tracking-widest hover:text-blue-500 transition-colors">Documentation</a>
+            <a href="#" class="text-[9px] font-bold text-slate-600 uppercase tracking-widest hover:text-blue-500 transition-colors">Privacy</a>
         </div>
     </footer>
 
     <script>
-        const inner = document.getElementById('cursor-inner');
-        const outer = document.getElementById('cursor-outer');
-        let selectedEnv = 'elementor';
-
+        // Cursor Movement
+        const i = document.getElementById('cursor-inner'), o = document.getElementById('cursor-outer');
         document.addEventListener('mousemove', (e) => {
-            inner.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
-            outer.style.transform = `translate3d(${e.clientX - 8}px, ${e.clientY - 8}px, 0)`;
+            i.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+            o.style.transform = `translate3d(${e.clientX - 12}px, ${e.clientY - 12}px, 0)`;
         });
 
-        function selectTech(el, tech) {
-            selectedEnv = tech;
-            el.classList.add('tech-active');
+        // Social Toggle
+        function toggleSocials() { document.getElementById('socialOptions').classList.toggle('show'); }
+        function closeSocials() { document.getElementById('socialOptions').classList.remove('show'); }
+
+        // Env Selector Logic
+        function setEnv(el) {
+            document.querySelectorAll('.tech-item').forEach(btn => btn.classList.remove('active'));
+            el.classList.add('active');
+            setTimeout(() => el.classList.remove('active'), 2000); // Revert after 2s
         }
 
-        function revertTech(el) {
-            el.classList.remove('tech-active');
-        }
-
-        function toggleSocial() {
-            const opt = document.getElementById('socialOptions');
-            const chat = document.getElementById('chatIcon');
-            const close = document.getElementById('closeIcon');
-            opt.classList.toggle('show');
-            chat.classList.toggle('hidden'); close.classList.toggle('hidden');
-        }
-
-        function closeChat() {
-            const opt = document.getElementById('socialOptions');
-            const chat = document.getElementById('chatIcon');
-            const close = document.getElementById('closeIcon');
-            if(opt.classList.contains('show')) {
-                opt.classList.remove('show');
-                chat.classList.remove('hidden');
-                close.classList.add('hidden');
-            }
-        }
-
-        async function handleSend(mode) {
-            // Processing logic remains same
+        function handleAction(type) {
+            console.log("Triggered:", type);
+            // Add your backend fetch logic here
         }
     </script>
 </body>
