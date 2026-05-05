@@ -125,7 +125,11 @@
         <div id="resBox" class="hidden mt-12 pb-10">
             <div class="flex justify-between items-center mb-4 px-4">
                 <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">AI Generation Output</span>
-                <button onclick="copyResult()" class="text-[10px] text-blue-400 hover:text-white transition-colors">COPY CODE</button>
+                <div class="flex gap-4">
+                    <button onclick="copyResult()" class="text-[10px] text-blue-400 hover:text-white transition-colors">COPY CODE</button>
+                    <!-- DOWNLOAD BUTTON ADDED HERE -->
+                    <button id="downloadBtn" onclick="downloadFile()" class="hidden text-[10px] text-emerald-400 hover:text-white transition-colors font-bold uppercase tracking-widest">⬇️ Download File</button>
+                </div>
             </div>
             <div id="result" class="bg-slate-950 border border-slate-900 p-10 rounded-[2.5rem] font-mono text-xs text-emerald-500/80 overflow-x-auto whitespace-pre-wrap custom-scrollbar shadow-inner min-h-[100px]"></div>
         </div>
@@ -181,6 +185,9 @@
             document.getElementById('labelTxt').innerText = "ATTACH FILE / LAYOUT";
         }
 
+        // GLOBAL FILENAME
+        let activeFileName = "index.html";
+
         // MAIN SEND FUNCTION
         async function handleSend(mode) {
             const text = document.getElementById('userInput').value;
@@ -193,6 +200,7 @@
 
             document.getElementById('loading').classList.remove('hidden');
             document.getElementById('resBox').classList.add('hidden');
+            document.getElementById('downloadBtn').classList.add('hidden');
             
             const formData = new FormData();
             formData.append('text', text);
@@ -208,6 +216,11 @@
                 
                 if(data.status === "success") {
                     document.getElementById('result').innerText = data.result;
+                    // Show download button if file_name is present
+                    if(data.file_name && mode !== 'wp_detect') {
+                        activeFileName = data.file_name;
+                        document.getElementById('downloadBtn').classList.remove('hidden');
+                    }
                 } else {
                     document.getElementById('result').innerText = "Error: " + data.result;
                 }
@@ -224,6 +237,22 @@
         function copyResult() {
             const text = document.getElementById('result').innerText;
             navigator.clipboard.writeText(text).then(() => alert("Code copied to clipboard!"));
+        }
+
+        // DOWNLOAD FUNCTION
+        function downloadFile() {
+            const content = document.getElementById('result').innerText;
+            if(!content) return;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = activeFileName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         }
     </script>
 </body>
