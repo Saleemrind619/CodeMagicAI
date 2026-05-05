@@ -1,65 +1,163 @@
-<!-- Pehle wala saara Header aur Main Buttons wese hi rahen ge -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeMagic AI | Enterprise</title>
+    <link rel="icon" href="https://fav.farm/🪄" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #050a15; color: white; font-family: sans-serif; cursor: none; overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column; }
+        .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* MOUSE CIRCLES */
+        #cursor-outer, #cursor-inner { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999; border-radius: 50%; will-change: transform; transition: transform 0.06s linear; }
+        #cursor-inner { width: 8px; height: 8px; border: 1.5px solid #10b981; background: rgba(16, 185, 129, 0.3); }
+        #cursor-outer { width: 22px; height: 22px; border: 1px solid rgba(59, 130, 246, 0.5); }
+        body.hovering-effect #cursor-outer { width: 35px; height: 35px; border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
 
-<div class="glass rounded-[2.5rem] p-8 md:p-12 shadow-2xl">
-    
-    <!-- Aapke Pehle wale 4 Buttons (Clone, Layout, Debug, WP Detect) -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <button onclick="handleSend('clone')" class="btn-magic bg-blue-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-900/20">🚀 Clone Site</button>
-        <button onclick="handleSend('layout')" class="btn-magic bg-emerald-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-900/20">🎨 Layout Code</button>
-        <button onclick="handleSend('debug')" class="btn-magic bg-slate-800 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest border border-slate-700">🔍 Fix Bug</button>
-        <button onclick="handleSend('wp_detect')" class="btn-magic bg-indigo-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-900/20">🕵️ WP Detect</button>
-    </div>
+        /* BUTTON EFFECTS */
+        .btn-magic { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-magic:hover { transform: scale(1.05); filter: brightness(1.2); }
+        
+        /* TECH STACK HOVER LOGIC */
+        .tech-label { transition: all 0.2s ease; color: #64748b; }
+        .tech-label:hover { font-weight: bold; color: #ffffff; }
+        .tech-label:hover i { transform: scale(1.2); }
+        
+        /* CLICK ACTIVE BUTTON STYLE */
+        .active-tech-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 12px;
+            color: white !important;
+            font-weight: bold;
+        }
 
-    <!-- SIRF YEH HISSA ADD KIYA HAI BUTTONS KE NECHE -->
-    <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 25px; padding-top: 20px;">
-        <div class="flex justify-center items-center gap-10">
-            
-            <!-- Elementor -->
-            <div onclick="activateTech(this)" class="tech-label flex items-center gap-2 text-slate-500 cursor-pointer transition-all duration-200 hover:font-bold hover:text-white group">
-                <i class="fas fa-layer-group text-pink-500 group-hover:scale-125 transition-transform"></i>
-                <span class="text-[11px] uppercase tracking-widest">Elementor</span>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <div id="cursor-outer"></div>
+    <div id="cursor-inner"></div>
+
+    <main class="max-w-7xl mx-auto flex-grow w-full p-6 md:p-10">
+        <header class="mb-12 border-b border-slate-800/50 pb-8 flex flex-col md:flex-row justify-between items-end">
+            <div>
+                <h1 class="text-4xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400 bg-clip-text text-transparent inline-block">CodeMagic AI</h1>
+                <p class="text-slate-600 text-[11px] mt-1.5 uppercase tracking-[0.4em]">Enterprise Edition</p>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] text-emerald-400 font-bold bg-emerald-950/30 px-4 py-2 rounded-full border border-emerald-500/20">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> SYSTEM ONLINE
+            </div>
+        </header>
+
+        <div class="glass rounded-[2.5rem] p-8 md:p-12 shadow-2xl">
+            <!-- ORIGINAL MAIN BUTTONS -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <button onclick="handleSend('clone')" class="btn-magic bg-blue-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-900/20">🚀 Clone Site</button>
+                <button onclick="handleSend('layout')" class="btn-magic bg-emerald-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-900/20">🎨 Layout Code</button>
+                <button onclick="handleSend('debug')" class="btn-magic bg-slate-800 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest border border-slate-700">🔍 Fix Bug</button>
+                <button onclick="handleSend('wp_detect')" class="btn-magic bg-indigo-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-900/20">🕵️ WP Detect</button>
             </div>
 
-            <!-- Tailwind -->
-            <div onclick="activateTech(this)" class="tech-label flex items-center gap-2 text-slate-500 cursor-pointer transition-all duration-200 hover:font-bold hover:text-white group">
-                <i class="fab fa-css3 text-cyan-400 group-hover:scale-125 transition-transform"></i>
-                <span class="text-[11px] uppercase tracking-widest">Tailwind CSS</span>
+            <!-- NEW TECH STACK SECTION (With Border Line) -->
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 25px; padding-top: 20px;">
+                <div class="flex justify-center items-center gap-10">
+                    <!-- Elementor -->
+                    <div onclick="activateTech(this)" class="tech-label flex items-center gap-2 cursor-pointer group">
+                        <i class="fas fa-layer-group text-pink-500 transition-transform"></i>
+                        <span class="text-[11px] uppercase tracking-widest">Elementor</span>
+                    </div>
+
+                    <!-- Tailwind -->
+                    <div onclick="activateTech(this)" class="tech-label flex items-center gap-2 cursor-pointer group">
+                        <i class="fab fa-css3 text-cyan-400 transition-transform"></i>
+                        <span class="text-[11px] uppercase tracking-widest">Tailwind CSS</span>
+                    </div>
+
+                    <!-- React -->
+                    <div onclick="activateTech(this)" class="tech-label flex items-center gap-2 cursor-pointer group">
+                        <i class="fab fa-react text-blue-500 transition-transform"></i>
+                        <span class="text-[11px] uppercase tracking-widest">React / Next.js</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- React -->
-            <div onclick="activateTech(this)" class="tech-label flex items-center gap-2 text-slate-500 cursor-pointer transition-all duration-200 hover:font-bold hover:text-white group">
-                <i class="fab fa-react text-blue-500 group-hover:scale-125 transition-transform"></i>
-                <span class="text-[11px] uppercase tracking-widest">React / Next.js</span>
+            <!-- INPUT SECTION -->
+            <div class="mt-10">
+                <textarea id="userInput" class="w-full h-64 bg-slate-950 border border-slate-800 rounded-3xl p-6 text-sm font-mono focus:border-blue-500 outline-none custom-scrollbar shadow-inner" placeholder="Paste URL or describe your layout here..."></textarea>
             </div>
-
         </div>
-    </div>
 
-    <!-- Baki Textarea aur Result Box wese hi rahega -->
-    <div class="mt-10">
-        <textarea id="userInput" class="w-full h-64 bg-slate-950 border border-slate-800 rounded-3xl p-6 text-sm font-mono focus:border-blue-500 outline-none" placeholder="Paste URL or describe layout..."></textarea>
-    </div>
-</div>
+        <div id="loading" class="hidden mt-8 text-center animate-pulse text-blue-400 font-mono text-[10px] tracking-widest">PROCESSING...</div>
 
-<style>
-    /* Sirf Click hone par Button banne ki CSS */
-    .active-tech-btn {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 8px 16px;
-        border-radius: 12px;
-        color: white !important;
-        font-weight: bold;
-    }
-</style>
+        <div id="resBox" class="hidden mt-12 pb-20">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Output</span>
+                <button id="downloadBtn" onclick="downloadFile()" class="hidden text-[10px] text-emerald-400 font-bold uppercase tracking-widest">⬇️ Download</button>
+            </div>
+            <div id="result" class="bg-slate-950 border border-slate-900 p-8 rounded-[2.5rem] font-mono text-[11px] text-emerald-500/80 overflow-x-auto whitespace-pre-wrap"></div>
+        </div>
+    </main>
 
-<script>
-    function activateTech(el) {
-        // Pehle se active button ko normal label banao
-        document.querySelectorAll('.tech-label').forEach(item => {
-            item.classList.remove('active-tech-btn');
+    <script>
+        // MOUSE CIRCLE LOGIC
+        const inner = document.getElementById('cursor-inner');
+        const outer = document.getElementById('cursor-outer');
+        document.addEventListener('mousemove', (e) => {
+            inner.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
+            outer.style.transform = `translate3d(${e.clientX - 8}px, ${e.clientY - 8}px, 0)`;
         });
-        // Sirf click wale ko button banao
-        el.classList.add('active-tech-btn');
-    }
-</script>
+
+        // TECH SELECTION LOGIC
+        function activateTech(el) {
+            document.querySelectorAll('.tech-label').forEach(item => {
+                item.classList.remove('active-tech-btn');
+            });
+            el.classList.add('active-tech-btn');
+        }
+
+        // SEND LOGIC
+        async function handleSend(mode) {
+            const text = document.getElementById('userInput').value;
+            if(!text.trim()) return alert("Please enter something!");
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('resBox').classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('text', text);
+            formData.append('mode', mode);
+
+            try {
+                const response = await fetch('/process', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                if(data.status === "success") {
+                    document.getElementById('result').innerText = data.result;
+                    if(mode !== 'wp_detect') document.getElementById('downloadBtn').classList.remove('hidden');
+                } else {
+                    document.getElementById('result').innerText = "Error: " + data.result;
+                }
+                document.getElementById('resBox').classList.remove('hidden');
+            } catch (e) {
+                alert("Connection failed.");
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        function downloadFile() {
+            const blob = new Blob([document.getElementById('result').innerText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = "code.html"; a.click();
+        }
+    </script>
+</body>
+</html>
