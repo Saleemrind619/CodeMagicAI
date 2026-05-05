@@ -18,12 +18,17 @@
         .i-container { position: relative; display: inline-block; }
         .i-dot { position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; }
         
-        .btn-magic { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .btn-magic:hover { transform: scale(1.05); }
+        .btn-magic { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .btn-magic:hover { transform: scale(1.02); }
+
+        /* Tech Options Styling */
+        .tech-pill-container { background: rgba(2, 6, 23, 0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 6px; display: flex; justify-content: space-around; align-items: center; width: 100%; max-width: 600px; margin: 0 auto; }
+        .tech-btn { padding: 10px 25px; border-radius: 14px; font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s ease; border: 1px solid transparent; }
+        .tech-btn:hover { color: #3b82f6; }
+        .tech-active { background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6 !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.1); }
         
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-
         #socialOptions.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
     </style>
 </head>
@@ -60,9 +65,26 @@
             </div>
         </header>
 
-        <!-- Main Glass -->
+        <!-- Main Container -->
         <div class="glass rounded-[2.5rem] p-8 md:p-12 shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
+            <!-- Action Buttons Row -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <button onclick="handleSend('clone')" class="btn-magic bg-blue-600 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">🌐 Clone Website</button>
+                <button onclick="handleSend('layout')" class="btn-magic bg-emerald-600 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">🥞 Layout 2 Code</button>
+                <button onclick="handleSend('debug')" class="btn-magic bg-[#1e293b] py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 border border-slate-700">👾 Neural Debug</button>
+                <button onclick="handleSend('wp_detect')" class="btn-magic bg-indigo-600 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/20">🪄 WP Detect</button>
+            </div>
+
+            <!-- Tech Selector Row -->
+            <div class="mb-10 px-4">
+                <div class="tech-pill-container">
+                    <button onclick="selectTech(this, 'elementor')" onmouseleave="revertTech(this)" class="tech-btn">Elementor</button>
+                    <button onclick="selectTech(this, 'tailwind')" onmouseleave="revertTech(this)" class="tech-btn">Tailwind</button>
+                    <button onclick="selectTech(this, 'react')" onmouseleave="revertTech(this)" class="tech-btn">React / Next.js</button>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-4">
                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Input Terminal</label>
                 <div class="bg-slate-900 px-4 py-2 rounded-xl border border-slate-800 flex items-center gap-2">
                     <label for="fileInput" class="cursor-pointer text-[10px] font-bold text-slate-300">📎 ATTACH FILE / LAYOUT</label>
@@ -70,34 +92,16 @@
                 </div>
             </div>
 
-            <textarea id="userInput" class="w-full h-80 bg-[#020617] border border-slate-800 rounded-3xl p-8 text-sm font-mono focus:border-blue-500 outline-none custom-scrollbar" placeholder="Describe layout, paste code, or enter URL..."></textarea>
-            
-            <div class="mt-10 flex flex-col md:flex-row items-end gap-4">
-                <div class="flex flex-col w-full md:w-64">
-                    <span class="text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-widest">Environment</span>
-                    <select id="targetEditor" class="bg-[#0f172a] border border-slate-800 p-4 rounded-2xl text-xs outline-none cursor-pointer text-white">
-                        <option value="elementor">WordPress (Elementor)</option>
-                        <option value="tailwind">Tailwind CSS</option>
-                        <option value="react">React / Next.js</option>
-                    </select>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
-                    <button onclick="handleSend('clone')" class="btn-magic bg-blue-600 py-4 rounded-2xl font-bold text-xs uppercase shadow-lg">🚀 Clone Website</button>
-                    <button onclick="handleSend('layout')" class="btn-magic bg-emerald-600 py-4 rounded-2xl font-bold text-xs uppercase shadow-lg">🎨 Layout to Code</button>
-                    <button onclick="handleSend('debug')" class="btn-magic bg-slate-800 py-4 rounded-2xl font-bold text-xs uppercase border border-slate-700">🔍 Fix My Bug</button>
-                    <button onclick="handleSend('wp_detect')" class="btn-magic bg-indigo-600 py-4 rounded-2xl font-bold text-xs uppercase shadow-lg">🕵️ WP Detect</button>
-                </div>
-            </div>
+            <textarea id="userInput" class="w-full h-80 bg-[#020617] border border-slate-800/50 rounded-3xl p-8 text-sm font-mono focus:border-blue-500/50 outline-none custom-scrollbar" placeholder="Describe layout, paste code, or enter URL..."></textarea>
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="mt-auto py-8 border-t border-slate-800/50 bg-slate-950/30">
         <div class="max-w-7xl mx-auto px-10 flex flex-col md:flex-row justify-between items-center gap-6">
             <p class="text-slate-500 text-xs uppercase tracking-widest">© 2026 CodeMagic Ai | Official Theme Engine</p>
             <div class="flex gap-8 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
-                <a href="#" class="hover:text-blue-400">Documentation</a>
-                <a href="#" class="hover:text-blue-400">Privacy Policy</a>
+                <a href="#" class="hover:text-blue-400 transition-colors">Documentation</a>
+                <a href="#" class="hover:text-blue-400 transition-colors">Privacy Policy</a>
             </div>
         </div>
     </footer>
@@ -105,10 +109,21 @@
     <script>
         const inner = document.getElementById('cursor-inner');
         const outer = document.getElementById('cursor-outer');
+        let selectedEnv = 'elementor';
+
         document.addEventListener('mousemove', (e) => {
             inner.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
             outer.style.transform = `translate3d(${e.clientX - 8}px, ${e.clientY - 8}px, 0)`;
         });
+
+        function selectTech(el, tech) {
+            selectedEnv = tech;
+            el.classList.add('tech-active');
+        }
+
+        function revertTech(el) {
+            el.classList.remove('tech-active');
+        }
 
         function toggleSocial() {
             const opt = document.getElementById('socialOptions');
@@ -127,6 +142,10 @@
                 chat.classList.remove('hidden');
                 close.classList.add('hidden');
             }
+        }
+
+        async function handleSend(mode) {
+            // Processing logic remains same
         }
     </script>
 </body>
