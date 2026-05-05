@@ -1,92 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Magical AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .gradient-text { background: linear-gradient(90deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    </style>
-</head>
-<body class="bg-[#0f172a] min-h-screen text-white flex flex-col items-center p-4">
-
-    <h1 class="text-4xl font-black mb-8 gradient-text mt-10">CODE MAGICAL AI</h1>
-
-    <!-- Action Buttons -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mb-8">
-        <button onclick="setMode('clone')" class="glass p-4 rounded-xl hover:bg-blue-600 transition">🚀 Clone Website</button>
-        <button onclick="setMode('layout')" class="glass p-4 rounded-xl hover:bg-purple-600 transition">🎨 Layout to Code</button>
-        <button onclick="setMode('debug')" class="glass p-4 rounded-xl hover:bg-red-600 transition">🔍 Fix My Bug</button>
-        <button onclick="setMode('wp_detect')" class="glass p-4 rounded-xl hover:bg-green-600 transition">🕵️ WP Detect</button>
-    </div>
-
-    <!-- PIYARI LOOK OPTIONS (New Section) -->
-    <div class="w-full max-w-4xl grid grid-cols-3 gap-4 mb-10">
-        <div class="glass p-4 rounded-2xl text-center border-b-4 border-pink-500">
-            <i class="fas fa-cubes text-pink-500 text-2xl mb-2"></i>
-            <h4 class="font-bold text-xs uppercase tracking-widest">Elementor</h4>
-            <p class="text-[10px] text-gray-400">Ready to Use</p>
-        </div>
-        <div class="glass p-4 rounded-2xl text-center border-b-4 border-cyan-400">
-            <i class="fab fa-css3-alt text-cyan-400 text-2xl mb-2"></i>
-            <h4 class="font-bold text-xs uppercase tracking-widest">Tailwind CSS</h4>
-            <p class="text-[10px] text-gray-400">Modern Styling</p>
-        </div>
-        <div class="glass p-4 rounded-2xl text-center border-b-4 border-blue-500">
-            <i class="fab fa-react text-blue-500 text-2xl mb-2"></i>
-            <h4 class="font-bold text-xs uppercase tracking-widest">React / Next.js</h4>
-            <p class="text-[10px] text-gray-400">Next Gen Tech</p>
-        </div>
-    </div>
-
-    <!-- Input Area -->
-    <textarea id="userInput" class="w-full max-w-4xl h-40 glass rounded-2xl p-4 mb-4 outline-none focus:border-blue-500" placeholder="Paste URL or Describe layout..."></textarea>
-    
-    <button onclick="process()" class="bg-blue-600 px-8 py-3 rounded-full font-bold hover:scale-105 transition">Generate Magic ✨</button>
-
-    <!-- Result Display & Download -->
-    <div id="resultBox" class="hidden w-full max-w-4xl mt-10 p-6 glass rounded-2xl">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold">Output Result:</h3>
-            <button id="downloadBtn" class="bg-green-600 text-xs px-4 py-2 rounded-lg font-bold">⬇️ Download File</button>
-        </div>
-        <pre id="outputText" class="whitespace-pre-wrap text-sm text-gray-300"></pre>
-    </div>
-
-    <script>
-        let currentMode = 'clone';
-        function setMode(m) { currentMode = m; alert("Mode set to: " + m); }
-
-        async function process() {
-            const text = document.getElementById('userInput').value;
-            const resBox = document.getElementById('resultBox');
-            const outText = document.getElementById('outputText');
+import os  
+import requests  
+from flask import Flask, render_template, request, jsonify  
+from groq import Groq  
+  
+app = Flask(__name__, template_folder='../templates')  
+  
+# Environment Variable for Groq  
+GROQ_KEY = os.environ.get("GROQ_API_KEY")  
+client = Groq(api_key=GROQ_KEY) if GROQ_KEY else None  
+  
+def get_ai_response(prompt, system_instruction):  
+    if not client:  
+        return "Error: Groq API Key missing in Environment Variables."  
+    try:  
+        chat_completion = client.chat.completions.create(  
+            messages=[  
+                {"role": "system", "content": system_instruction},  
+                {"role": "user", "content": prompt}  
+            ],  
+            model="llama-3.3-70b-versatile",  
+            temperature=0.6,  
+        )  
+        return chat_completion.choices[0].message.content  
+    except Exception as e:  
+        return f"System Error: {str(e)}"  
+  
+def deep_wp_check(url):  
+    """Ultra-Aggressive detection logic to bypass high-level masking"""  
+    headers = {  
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',  
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',  
+    }  
+      
+    try:  
+        if not url.startswith('http'):  
+            url = 'https://' + url  
+              
+        # Step 1: Base Request with redirects allowed  
+        res = requests.get(url, headers=headers, timeout=15, allow_redirects=True)  
+        html = res.text.lower()  
+          
+        # 1. Triple-Check HTML (Hidden Comments, Tags & Meta)  
+        wp_indicators = [
+            "wp-content", "wp-includes", "wp-json", "wp-block", "wp-embed",
+            "rel='https://api.w.org/'", "s0.wp.com", "rvm-wp", "ver=wp-",
+            "wp-emoji-release.min.js"
+        ]  
+        if any(x in html for x in wp_indicators):  
+            return "✅ WordPress Detected (Source Analysis)"  
+  
+        # 2. Aggressive API Scrutiny (The 'Unmasker' Check)  
+        api_endpoints = ["/wp-json/wp/v2/", "/index.php?rest_route=/", "/?rest_route=/", "/wp-json/"]  
+        for endpoint in api_endpoints:  
+            try:  
+                api_res = requests.get(url.rstrip('/') + endpoint, headers=headers, timeout=5)  
+                if api_res.status_code == 200 and ("namespaces" in api_res.text or "routes" in api_res.text):  
+                    return "✅ WordPress Detected (via REST API Bypass)"  
+            except: continue  
+  
+        # 3. Asset & Header Deep Scan  
+        if 'wordpress_test_cookie' in str(res.cookies) or 'wp-settings' in str(res.cookies):  
+            return "✅ WordPress Detected (Cookie Analysis)"  
             
-            resBox.classList.remove('hidden');
-            outText.innerText = "Processing... Please wait.";
-
-            const formData = new FormData();
-            formData.append('mode', currentMode);
-            formData.append('text', text);
-
-            const response = await fetch('/process', { method: 'POST', body: formData });
-            const data = await response.json();
-
-            if(data.status === 'success') {
-                outText.innerText = data.result;
-                document.getElementById('downloadBtn').onclick = () => {
-                    const blob = new Blob([data.result], { type: 'text/plain' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = data.file_name;
-                    a.click();
-                };
-            }
-        }
-    </script>
-</body>
-</html>
+        if 'wp-json' in res.headers.get('Link', ''):  
+            return "✅ WordPress Detected (Header Link Scan)"  
+  
+        # 4. CSS Class & Structural Detection  
+        css_classes = ["wp-post-image", "attachment-post-thumbnail", "body.wp-custom-logo", "has-blocks"]  
+        if any(cls in html for cls in css_classes):  
+            return "✅ WordPress Detected (CSS Layout Pattern)"  
+  
+        # 5. Default Admin Paths  
+        try:  
+            admin_check = requests.get(url.rstrip('/') + "/wp-login.php", headers=headers, timeout=5)  
+            if admin_check.status_code == 200 and "user_login" in admin_check.text:  
+                return "✅ WordPress Detected (Admin Path Found)"  
+        except: pass  
+  
+        return "❌ Not a WordPress Site"  
+    except Exception as e:  
+        return f"⚠️ Scan Failed: {str(e)}"  
+  
+@app.route('/')  
+def home():  
+    return render_template('index.html')  
+  
+@app.route('/process', methods=['POST'])  
+def process():  
+    mode = request.form.get('mode')  
+    user_text = request.form.get('text', '').strip()  
+    
+    # Default file name settings for download
+    file_name = "index.html"  
+  
+    if mode == 'wp_detect':  
+        if not user_text:  
+            return jsonify({"status": "error", "result": "Please enter a URL"})  
+        result = deep_wp_check(user_text)  
+        return jsonify({
+            "status": "success", 
+            "result": result,
+            "file_name": "detect_report.txt"
+        })  
+  
+    # AI Modes configuration
+    if mode == 'clone':  
+        sys_msg = "Write complete, single-file HTML code with Tailwind CSS. Start directly with <!DOCTYPE html>."  
+        file_name = "cloned_site.html"  
+    elif mode == 'layout':  
+        sys_msg = "Convert this layout to a single-file responsive HTML/CSS."  
+        file_name = "layout.html"  
+    elif mode == 'debug':  
+        sys_msg = "Fix the code and return ONLY the corrected code."  
+        file_name = "fixed_code.txt"  
+    else:  
+        sys_msg = "Assistant mode."  
+  
+    response = get_ai_response(user_text, sys_msg)  
+      
+    return jsonify({  
+        "status": "success",   
+        "result": response,  
+        "file_name": file_name  
+    })  
+  
+# Critical for Vercel/Serverless deployment  
+app_handler = app
