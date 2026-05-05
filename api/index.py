@@ -1,92 +1,113 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Magical AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .gradient-text { background: linear-gradient(90deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    </style>
-</head>
-<body class="bg-[#0f172a] min-h-screen text-white flex flex-col items-center p-4">
+import os
+import requests
+import re
+from flask import Flask, render_template, request, jsonify
+from groq import Groq
 
-    <h1 class="text-4xl font-black mb-8 gradient-text mt-10">CODE MAGICAL AI</h1>
+app = Flask(__name__, template_folder='../templates')
 
-    <!-- Action Buttons -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mb-8">
-        <button onclick="setMode('clone')" class="glass p-4 rounded-xl hover:bg-blue-600 transition">🚀 Clone Website</button>
-        <button onclick="setMode('layout')" class="glass p-4 rounded-xl hover:bg-purple-600 transition">🎨 Layout to Code</button>
-        <button onclick="setMode('debug')" class="glass p-4 rounded-xl hover:bg-red-600 transition">🔍 Fix My Bug</button>
-        <button onclick="setMode('wp_detect')" class="glass p-4 rounded-xl hover:bg-green-600 transition">🕵️ WP Detect</button>
-    </div>
+GROQ_KEY = os.environ.get("GROQ_API_KEY")
+client = Groq(api_key=GROQ_KEY)
 
-    <!-- PIYARI LOOK OPTIONS (New Section) -->
-    <div class="w-full max-w-4xl grid grid-cols-3 gap-4 mb-10">
-        <div class="glass p-4 rounded-2xl text-center border-b-4 border-pink-500">
-            <i class="fas fa-cubes text-pink-500 text-2xl mb-2"></i>
-            <h4 class="font-bold text-xs uppercase tracking-widest">Elementor</h4>
-            <p class="text-[10px] text-gray-400">Ready to Use</p>
-        </div>
-        <div class="glass p-4 rounded-2xl text-center border-b-4 border-cyan-400">
-            <i class="fab fa-css3-alt text-cyan-400 text-2xl mb-2"></i>
-            <h4 class="font-bold text-xs uppercase tracking-widest">Tailwind CSS</h4>
-            <p class="text-[10px] text-gray-400">Modern Styling</p>
-        </div>
-        <div class="glass p-4 rounded-2xl text-center border-b-4 border-blue-500">
-            <i class="fab fa-react text-blue-500 text-2xl mb-2"></i>
-            <h4 class="font-bold text-xs uppercase tracking-widest">React / Next.js</h4>
-            <p class="text-[10px] text-gray-400">Next Gen Tech</p>
-        </div>
-    </div>
+def get_ai_response(prompt, system_instruction):
+    if not GROQ_KEY:
+        return "Error: Groq API Key missing."
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": prompt}
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.6,
+        )
+        return chat_completion.choices[0].message.content
+    except Exception as e:
+        return f"System Error: {str(e)}"
 
-    <!-- Input Area -->
-    <textarea id="userInput" class="w-full max-w-4xl h-40 glass rounded-2xl p-4 mb-4 outline-none focus:border-blue-500" placeholder="Paste URL or Describe layout..."></textarea>
+def deep_wp_check(url):
+    """Advanced detection logic to bypass basic security/hiding techniques"""
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
     
-    <button onclick="process()" class="bg-blue-600 px-8 py-3 rounded-full font-bold hover:scale-105 transition">Generate Magic ✨</button>
+    try:
+        # Standard Request
+        res = requests.get(url, headers=headers, timeout=12)
+        html = res.text.lower()
+        resp_headers = res.headers
+        
+        # 1. Check Standard Signs
+        if any(x in html for x in ["wp-content", "wp-includes", "wp-json", "wp-block"]):
+            return "✅ WordPress Detected (Standard Footprints)"
 
-    <!-- Result Display & Download -->
-    <div id="resultBox" class="hidden w-full max-w-4xl mt-10 p-6 glass rounded-2xl">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold">Output Result:</h3>
-            <button id="downloadBtn" class="bg-green-600 text-xs px-4 py-2 rounded-lg font-bold">⬇️ Download File</button>
-        </div>
-        <pre id="outputText" class="whitespace-pre-wrap text-sm text-gray-300"></pre>
-    </div>
+        # 2. Check Hidden REST API (Hard to hide)
+        api_url = url.rstrip('/') + "/wp-json/wp/v2/"
+        api_res = requests.get(api_url, headers=headers, timeout=5)
+        if api_res.status_code == 200 and "namespaces" in api_res.text:
+            return "✅ WordPress Detected (via REST API Fingerprinting)"
 
-    <script>
-        let currentMode = 'clone';
-        function setMode(m) { currentMode = m; alert("Mode set to: " + m); }
+        # 3. Check Response Headers (Bypass front-end masks)
+        link_header = resp_headers.get('Link', '')
+        if 'api.w.org' in link_header or 'wp-json' in link_header:
+            return "✅ WordPress Detected (via Header Analysis)"
 
-        async function process() {
-            const text = document.getElementById('userInput').value;
-            const resBox = document.getElementById('resultBox');
-            const outText = document.getElementById('outputText');
-            
-            resBox.classList.remove('hidden');
-            outText.innerText = "Processing... Please wait.";
+        # 4. Check Common Hidden Files
+        for file in ["/readme.html", "/license.txt"]:
+            file_res = requests.get(url.rstrip('/') + file, headers=headers, timeout=5)
+            if file_res.status_code == 200 and "wordpress" in file_res.text.lower():
+                return f"✅ WordPress Detected (via {file} lookup)"
 
-            const formData = new FormData();
-            formData.append('mode', currentMode);
-            formData.append('text', text);
+        return "❌ Not a WordPress Site (or High-Level Custom Masking)"
 
-            const response = await fetch('/process', { method: 'POST', body: formData });
-            const data = await response.json();
+    except Exception as e:
+        return f"⚠️ Connection Error: {str(e)}"
 
-            if(data.status === 'success') {
-                outText.innerText = data.result;
-                document.getElementById('downloadBtn').onclick = () => {
-                    const blob = new Blob([data.result], { type: 'text/plain' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = data.file_name;
-                    a.click();
-                };
-            }
-        }
-    </script>
-</body>
-</html>
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/process', methods=['POST'])
+def process():
+    mode = request.form.get('mode')
+    user_text = request.form.get('text', '').strip()
+    
+    # Default values
+    file_name = "index.html"
+    sys_msg = ""
+
+    # WP DETECT MODE (Deep Scan)
+    if mode == 'wp_detect':
+        if not user_text:
+            return jsonify({"status": "error", "result": "Please provide a URL."})
+        
+        url = user_text if user_text.startswith('http') else 'https://' + user_text
+        detection_result = deep_wp_check(url)
+        return jsonify({
+            "status": "success", 
+            "result": detection_result,
+            "file_name": "detect_report.txt"
+        })
+
+    # AI MODES
+    if mode == 'clone':
+        sys_msg = "Write complete, single-file HTML code with Tailwind CSS to clone the aesthetic. Start directly with <!DOCTYPE html>."
+        file_name = "cloned_site.html"
+    elif mode == 'layout':
+        sys_msg = "Convert this layout description to a professional, responsive HTML/CSS file using Tailwind."
+        file_name = "layout.html"
+    elif mode == 'debug':
+        sys_msg = "Analyze and fix the following code. Return ONLY the corrected code."
+        file_name = "fixed_code.txt"
+    else:
+        sys_msg = "You are a professional coding assistant."
+
+    response = get_ai_response(user_text, sys_msg)
+    
+    return jsonify({
+        "status": "success", 
+        "result": response,
+        "file_name": file_name
+    })
+
+app_handler = app
