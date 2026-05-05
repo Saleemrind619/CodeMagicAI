@@ -7,21 +7,16 @@ from groq import Groq
 app = Flask(__name__, template_folder='../templates')
 
 # --- CONFIGURATION ---
-# Key Vercel ki settings (Environment Variables) se uthayega
 GROQ_KEY = os.environ.get("GROQ_API_KEY")
-
-# Groq Client Initialize
 client = Groq(api_key=GROQ_KEY)
 
 def get_ai_response(prompt):
     if not GROQ_KEY:
         return "Error: Groq API Key missing in Vercel Settings."
-
     try:
-        # Naya Model: llama-3.3-70b-versatile
         chat_completion = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are an expert full-stack developer. Provide clean, professional code solutions."},
+                {"role": "system", "content": "You are an expert full-stack developer."},
                 {"role": "user", "content": prompt}
             ],
             model="llama-3.3-70b-versatile",
@@ -39,36 +34,44 @@ def index():
 @app.route('/process', methods=['POST'])
 def process():
     mode = request.form.get('mode')
-    user_text = request.form.get('text')
+    user_text = request.form.get('text').strip()
     editor = request.form.get('editor')
 
     if not user_text:
         return jsonify({"status": "error", "result": "Input is empty!"})
 
-    # --- WordPress Detection Logic ---
+    # --- ENHANCED WordPress Detection Logic ---
     if mode == 'wp_detect':
         try:
             target = user_text if user_text.startswith('http') else 'https://' + user_text
-            res = requests.get(target, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+            # User-Agent add kiya hai taake website request block na kare
+            res = requests.get(target, timeout=15, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            })
             
-            theme = re.search(r'wp-content/themes/([^/]+)/', res.text)
-            theme_name = theme.group(1).title() if theme else "Custom/Unknown"
-            is_wp = "wp-content" in res.text or "wp-includes" in res.text
+            content = res.text.lower()
+            
+            # Multiple Checks for WordPress
+            is_wp = any(x in content for x in ["wp-content", "wp-includes", "wp-json", "wp-login", "xmlrpc.php"])
             
             if is_wp:
-                return jsonify({"status": "success", "result": f"✅ WordPress Site Detected!\n🎨 Theme: {theme_name}"})
+                # Theme nikalne ka behtar tareeka
+                theme_match = re.search(r'wp-content/themes/([^/|\"|\']+)', res.text)
+                theme_name = theme_match.group(1).replace('-', ' ').title() if theme_match else "Custom or Hidden Theme"
+                
+                return jsonify({
+                    "status": "success", 
+                    "result": f"✅ WordPress Site Detected!\n🎨 Theme: {theme_name}\n🔍 Status: Verified by CodeMagic"
+                })
             else:
-                return jsonify({"status": "success", "result": "❌ Not a WordPress site."})
+                return jsonify({"status": "success", "result": "❌ Not a WordPress site or security is blocking the scan."})
         except Exception as e:
-            return jsonify({"status": "error", "result": f"Scan failed: {str(e)}"})
+            return jsonify({"status": "error", "result": f"Scan failed: Site might be down or blocking requests. ({str(e)})"})
 
-    # --- AI Generation (Clone, Layout, Debug) ---
-    prompt = f"Mode: {mode}. Editor: {editor}. Request: {user_text}"
+    # --- AI Generation ---
+    prompt = f"Mode: {mode}. Request: {user_text}"
     response = get_ai_response(prompt)
     
-    if "Error" in response:
-        return jsonify({"status": "error", "result": response})
-        
     return jsonify({"status": "success", "result": response})
 
 app_handler = app
