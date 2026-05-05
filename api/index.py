@@ -1,3 +1,30 @@
+import os
+import requests
+import re
+from flask import Flask, render_template, request, jsonify
+from groq import Groq
+
+app = Flask(__name__, template_folder='../templates')
+
+GROQ_KEY = os.environ.get("GROQ_API_KEY")
+client = Groq(api_key=GROQ_KEY)
+
+def get_ai_response(prompt, system_instruction):
+    if not GROQ_KEY:
+        return "Error: Groq API Key missing."
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": prompt}
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.6,
+        )
+        return chat_completion.choices[0].message.content
+    except Exception as e:
+        return f"System Error: {str(e)}"
+
 def deep_wp_check(url):
     """Ultra-Aggressive detection logic to bypass high-level masking"""
     headers = {
@@ -21,7 +48,6 @@ def deep_wp_check(url):
             return "✅ WordPress Detected (Source Analysis)"
 
         # 2. Aggressive API Scrutiny (The 'Unmasker' Check)
-        # Bypassing renamed wp-json via direct internal routes
         api_endpoints = [
             "/wp-json/wp/v2/", 
             "/index.php?rest_route=/", 
@@ -36,8 +62,7 @@ def deep_wp_check(url):
             except: 
                 continue
 
-        # 3. Script & Asset Fingerprinting (Signature match)
-        # Checking for common files that remain even if directories are masked
+        # 3. Script & Asset Fingerprinting
         script_signatures = [
             "wp-emoji-release.min.js", 
             "wp-polyfill.min.js", 
@@ -47,18 +72,14 @@ def deep_wp_check(url):
         if any(sig in html for sig in script_signatures):
             return "✅ WordPress Detected (Asset Fingerprinting)"
 
-        # 4. Header & Cookie Deep Scan (Server-side signals)
-        # Checking for specific headers and cookies set by WP or common plugins
+        # 4. Header & Cookie Deep Scan
         if 'wordpress_test_cookie' in str(res.cookies) or 'wp-settings' in str(res.cookies):
             return "✅ WordPress Detected (Cookie Analysis)"
             
-        if 'X-Powered-By' in res.headers and 'PHP' in res.headers['X-Powered-By']:
-            # Common for WP sites, though not definitive alone, we use it as a hint
-            if 'wp-json' in res.headers.get('Link', ''):
-                return "✅ WordPress Detected (Header Link Scan)"
+        if 'wp-json' in res.headers.get('Link', ''):
+            return "✅ WordPress Detected (Header Link Scan)"
 
-        # 5. CSS Class & Structural Detection (Layout Analysis)
-        # Checking for classes that WP generates by default for themes
+        # 5. CSS Class & Structural Detection
         css_classes = [
             "wp-post-image", 
             "attachment-post-thumbnail", 
@@ -69,13 +90,66 @@ def deep_wp_check(url):
         if any(cls in html for cls in css_classes):
             return "✅ WordPress Detected (CSS Layout Pattern)"
 
-        # 6. Default Admin Paths (Checking for accessibility)
-        # Some sites leave /wp-login.php or /wp-admin reachable
-        admin_check = requests.get(url.rstrip('/') + "/wp-login.php", headers=headers, timeout=5)
-        if admin_check.status_code == 200 and "user_login" in admin_check.text:
-            return "✅ WordPress Detected (Admin Path Found)"
+        # 6. Default Admin Paths
+        try:
+            admin_check = requests.get(url.rstrip('/') + "/wp-login.php", headers=headers, timeout=5)
+            if admin_check.status_code == 200 and "user_login" in admin_check.text:
+                return "✅ WordPress Detected (Admin Path Found)"
+        except:
+            pass
 
         return "❌ Not a WordPress Site"
 
     except Exception as e:
         return f"⚠️ Scan Failed: {str(e)}"
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/process', methods=['POST'])
+def process():
+    mode = request.form.get('mode')
+    user_text = request.form.get('text', '').strip()
+    editor_content = request.form.get('editor', '')
+
+    # Default file name
+    file_name = "index.html"
+
+    # WP DETECT MODE
+    if mode == 'wp_detect':
+        if not user_text:
+            return jsonify({"status": "error", "result": "Please enter a URL"})
+        
+        # URL format fix
+        target_url = user_text if user_text.startswith('http') else 'https://' + user_text
+        result = deep_wp_check(target_url)
+        
+        return jsonify({
+            "status": "success", 
+            "result": result,
+            "file_name": "detect_report.txt"
+        })
+
+    # AI MODES
+    if mode == 'clone':
+        sys_msg = "Write complete, single-file HTML code with Tailwind CSS. Start directly with <!DOCTYPE html>."
+        file_name = "cloned_site.html"
+    elif mode == 'layout':
+        sys_msg = "Convert this layout to a single-file responsive HTML/CSS."
+        file_name = "layout.html"
+    elif mode == 'debug':
+        sys_msg = "Fix the code and return ONLY the corrected code."
+        file_name = "fixed_code.txt"
+    else:
+        sys_msg = "Assistant mode."
+
+    response = get_ai_response(user_text, sys_msg)
+    
+    return jsonify({
+        "status": "success", 
+        "result": response,
+        "file_name": file_name 
+    })
+
+app_handler = app
