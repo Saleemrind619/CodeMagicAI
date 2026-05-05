@@ -26,7 +26,7 @@ def get_ai_response(prompt, system_instruction):
         return f"System Error: {str(e)}"  
   
 def deep_wp_check(url):  
-    """Ultra-Aggressive detection logic to bypass high-level masking"""  
+    """Ultra-Aggressive detection logic to bypass masking"""  
     headers = {  
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',  
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',  
@@ -36,11 +36,11 @@ def deep_wp_check(url):
         if not url.startswith('http'):  
             url = 'https://' + url  
               
-        # Step 1: Base Request with redirects allowed  
+        # Request with redirects
         res = requests.get(url, headers=headers, timeout=15, allow_redirects=True)  
         html = res.text.lower()  
           
-        # 1. Triple-Check HTML (Hidden Comments, Tags & Meta)  
+        # 1. HTML Source Analysis
         wp_indicators = [
             "wp-content", "wp-includes", "wp-json", "wp-block", "wp-embed",
             "rel='https://api.w.org/'", "s0.wp.com", "rvm-wp", "ver=wp-",
@@ -49,7 +49,7 @@ def deep_wp_check(url):
         if any(x in html for x in wp_indicators):  
             return "✅ WordPress Detected (Source Analysis)"  
   
-        # 2. Aggressive API Scrutiny (The 'Unmasker' Check)  
+        # 2. REST API Bypass Check
         api_endpoints = ["/wp-json/wp/v2/", "/index.php?rest_route=/", "/?rest_route=/", "/wp-json/"]  
         for endpoint in api_endpoints:  
             try:  
@@ -58,19 +58,19 @@ def deep_wp_check(url):
                     return "✅ WordPress Detected (via REST API Bypass)"  
             except: continue  
   
-        # 3. Asset & Header Deep Scan  
+        # 3. Header & Cookie Check
         if 'wordpress_test_cookie' in str(res.cookies) or 'wp-settings' in str(res.cookies):  
             return "✅ WordPress Detected (Cookie Analysis)"  
             
         if 'wp-json' in res.headers.get('Link', ''):  
             return "✅ WordPress Detected (Header Link Scan)"  
   
-        # 4. CSS Class & Structural Detection  
+        # 4. CSS & Structural Patterns
         css_classes = ["wp-post-image", "attachment-post-thumbnail", "body.wp-custom-logo", "has-blocks"]  
         if any(cls in html for cls in css_classes):  
-            return "✅ WordPress Detected (CSS Layout Pattern)"  
+            return "✅ WordPress Detected (CSS Pattern)"  
   
-        # 5. Default Admin Paths  
+        # 5. Hidden Admin Path Check
         try:  
             admin_check = requests.get(url.rstrip('/') + "/wp-login.php", headers=headers, timeout=5)  
             if admin_check.status_code == 200 and "user_login" in admin_check.text:  
@@ -89,40 +89,29 @@ def home():
 def process():  
     mode = request.form.get('mode')  
     user_text = request.form.get('text', '').strip()  
-    
-    # Default file name settings for download
     file_name = "index.html"  
   
     if mode == 'wp_detect':  
         if not user_text:  
-            return jsonify({"status": "error", "result": "Please enter a URL"})  
+            return jsonify({"status": "error", "result": "URL missing"})  
         result = deep_wp_check(user_text)  
-        return jsonify({
-            "status": "success", 
-            "result": result,
-            "file_name": "detect_report.txt"
-        })  
+        return jsonify({"status": "success", "result": result, "file_name": "detect_report.txt"})  
   
-    # AI Modes configuration
+    # AI Logic based on mode
     if mode == 'clone':  
-        sys_msg = "Write complete, single-file HTML code with Tailwind CSS. Start directly with <!DOCTYPE html>."  
-        file_name = "cloned_site.html"  
+        sys_msg = "Generate complete single-file HTML code with Tailwind CSS based on description. ONLY output code."  
+        file_name = "cloned_page.html"  
     elif mode == 'layout':  
-        sys_msg = "Convert this layout to a single-file responsive HTML/CSS."  
+        sys_msg = "Convert this layout description into responsive Tailwind HTML/CSS code."  
         file_name = "layout.html"  
     elif mode == 'debug':  
-        sys_msg = "Fix the code and return ONLY the corrected code."  
+        sys_msg = "Fix the following code bugs and return ONLY the corrected code."  
         file_name = "fixed_code.txt"  
     else:  
-        sys_msg = "Assistant mode."  
+        sys_msg = "Professional Web Development Assistant."  
   
     response = get_ai_response(user_text, sys_msg)  
-      
-    return jsonify({  
-        "status": "success",   
-        "result": response,  
-        "file_name": file_name  
-    })  
+    return jsonify({"status": "success", "result": response, "file_name": file_name})  
   
-# Critical for Vercel/Serverless deployment  
+# Export app for Vercel
 app_handler = app
