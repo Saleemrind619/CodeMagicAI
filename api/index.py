@@ -7,7 +7,7 @@ from groq import Groq
 app = Flask(__name__, template_folder='../templates')
 
 # --- CONFIGURATION ---
-# Humne key code se nikal di hai, ab ye Vercel ki settings se uthayega
+# Key Vercel ki settings (Environment Variables) se uthayega
 GROQ_KEY = os.environ.get("GROQ_API_KEY")
 
 # Groq Client Initialize
@@ -18,13 +18,15 @@ def get_ai_response(prompt):
         return "Error: Groq API Key missing in Vercel Settings."
 
     try:
+        # Naya Model: llama-3.3-70b-versatile
         chat_completion = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are an expert developer."},
+                {"role": "system", "content": "You are an expert full-stack developer. Provide clean, professional code solutions."},
                 {"role": "user", "content": prompt}
             ],
-            model="llama3-70b-8192",
+            model="llama-3.3-70b-versatile",
             temperature=0.5,
+            max_tokens=4096,
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
@@ -43,10 +45,30 @@ def process():
     if not user_text:
         return jsonify({"status": "error", "result": "Input is empty!"})
 
-    # AI Generation
-    prompt = f"Task: {mode}. Editor: {editor}. Request: {user_text}"
+    # --- WordPress Detection Logic ---
+    if mode == 'wp_detect':
+        try:
+            target = user_text if user_text.startswith('http') else 'https://' + user_text
+            res = requests.get(target, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+            
+            theme = re.search(r'wp-content/themes/([^/]+)/', res.text)
+            theme_name = theme.group(1).title() if theme else "Custom/Unknown"
+            is_wp = "wp-content" in res.text or "wp-includes" in res.text
+            
+            if is_wp:
+                return jsonify({"status": "success", "result": f"✅ WordPress Site Detected!\n🎨 Theme: {theme_name}"})
+            else:
+                return jsonify({"status": "success", "result": "❌ Not a WordPress site."})
+        except Exception as e:
+            return jsonify({"status": "error", "result": f"Scan failed: {str(e)}"})
+
+    # --- AI Generation (Clone, Layout, Debug) ---
+    prompt = f"Mode: {mode}. Editor: {editor}. Request: {user_text}"
     response = get_ai_response(prompt)
     
+    if "Error" in response:
+        return jsonify({"status": "error", "result": response})
+        
     return jsonify({"status": "success", "result": response})
 
 app_handler = app
